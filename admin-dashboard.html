@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - HealthyLife</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body class="admin-layout">
+    <div class="dashboard-layout">
+      <aside class="sidebar" style="background: #16162A;">
+        <div class="sidebar-header">
+          <div class="sidebar-logo">
+            <i class="fas fa-leaf"></i>
+            <span>HealthyLife</span>
+          </div>
+        </div>
+
+        <div class="user-profile">
+          <div
+            class="user-avatar"
+            id="adminAvatar"
+            style="background: linear-gradient(135deg, #9B59B6, #8E44AD);"
+          >
+            A
+          </div>
+          <div class="user-name" id="adminName">Admin</div>
+          <div class="user-role">Administrator</div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="nav-item active" data-section="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+          </div>
+          <div class="nav-item" data-section="manage-users">
+            <i class="fas fa-users-cog"></i>
+            <span>Manage Users</span>
+          </div>
+          <div class="nav-item" data-section="manage-dietitians">
+            <i class="fas fa-user-nurse"></i>
+            <span>Manage Dietitians</span>
+          </div>
+          <div class="nav-item" data-section="manage-plans">
+            <i class="fas fa-clipboard-check"></i>
+            <span>Manage Plans</span>
+          </div>
+          <div class="nav-item" data-section="reports">
+            <i class="fas fa-chart-pie"></i>
+            <span>Reports</span>
+          </div>
+        </nav>
+
+        <div class="sidebar-footer">
+          <button class="logout-btn" onclick="handleLogout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <div class="dashboard-hero">
+          <div class="hero-bg"></div>
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <h1 class="hero-greeting">
+              Admin Dashboard <span class="emoji">⚙️</span>
+            </h1>
+            <p class="hero-date" id="currentDate">
+              System overview and management
+            </p>
+          </div>
+        </div>
+
+        <div class="stats-grid stagger-animate">
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="background: rgba(155, 89, 182, 0.2); color: #BB8FCE;"
+            >
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+              <h4 id="totalUsers">1,245</h4>
+              <p>Total Users</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="background: rgba(46, 204, 113, 0.2); color: #2ECC71;"
+            >
+              <i class="fas fa-user-nurse"></i>
+            </div>
+            <div class="stat-info">
+              <h4 id="totalDietitians">28</h4>
+              <p>Dietitians</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="background: rgba(52, 152, 219, 0.2); color: #3498DB;"
+            >
+              <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="stat-info">
+              <h4 id="totalPlans">856</h4>
+              <p>Active Plans</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="background: rgba(212, 160, 23, 0.2); color: #D4A017;"
+            >
+              <i class="fas fa-percentage"></i>
+            </div>
+            <div class="stat-info">
+              <h4 id="successRate">87%</h4>
+              <p>Success Rate</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input
+              type="text"
+              placeholder="Search users, dietitians, or plans..."
+              id="adminSearch"
+            />
+          </div>
+
+          <div class="section-header">
+            <h2 class="section-title">Recent Users</h2>
+            <button class="btn btn-primary">
+              <i class="fas fa-plus"></i> Add User
+            </button>
+          </div>
+
+          <div class="card">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Joined</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar">JD</div>
+                      <div>
+                        <div class="patient-name">John Doe</div>
+                        <div class="patient-email">john@example.com</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>User</td>
+                  <td>Jan 15, 2024</td>
+                  <td><span class="status-badge active">Active</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="view-btn" title="View">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="edit-btn" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="delete-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar">SM</div>
+                      <div>
+                        <div class="patient-name">Sarah Miller</div>
+                        <div class="patient-email">sarah@example.com</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>Dietitian</td>
+                  <td>Dec 8, 2023</td>
+                  <td><span class="status-badge active">Active</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="view-btn" title="View">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="edit-btn" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="delete-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar">RJ</div>
+                      <div>
+                        <div class="patient-name">Robert Johnson</div>
+                        <div class="patient-email">robert@example.com</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>User</td>
+                  <td>Feb 1, 2024</td>
+                  <td><span class="status-badge inactive">Inactive</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="view-btn" title="View">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="edit-btn" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="delete-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/charts.js"></script>
+    <script src="js/admin.js"></script>
+  </body>
+</html>

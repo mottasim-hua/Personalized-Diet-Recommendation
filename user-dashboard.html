@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Dashboard - HealthyLife</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="calorie-warning" id="calorieWarning">
+      <div class="warning-content">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>
+          Warning: You've exceeded your daily calorie limit! Consider reducing
+          your intake.
+        </span>
+      </div>
+      <button class="warning-close" onclick="dismissWarning()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="dashboard-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-logo">
+            <i class="fas fa-leaf"></i>
+            <span>Personalized Diet Planner</span>
+          </div>
+        </div>
+
+        <div class="user-profile">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div class="user-name" id="userName">User</div>
+          <div class="user-role" id="userRole">User</div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="nav-item active" data-section="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+          </div>
+          <div class="nav-item" data-section="health-data">
+            <i class="fas fa-heartbeat"></i>
+            <span>Health Data</span>
+          </div>
+          <div class="nav-item" data-section="food-tracker">
+            <i class="fas fa-utensils"></i>
+            <span>Food Tracker</span>
+          </div>
+          <div class="nav-item" data-section="diet-plan">
+            <i class="fas fa-clipboard-list"></i>
+            <span>Diet Plan</span>
+          </div>
+          <div class="nav-item" data-section="reports">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </div>
+        </nav>
+
+        <div class="calorie-widget">
+          <div class="calorie-widget-label">Today's Calories</div>
+          <div class="calorie-ring-mini">
+            <svg viewBox="0 0 50 50">
+              <circle
+                cx="25"
+                cy="25"
+                r="20"
+                fill="none"
+                stroke="#E5E7EB"
+                stroke-width="4"
+              />
+              <circle
+                cx="25"
+                cy="25"
+                r="20"
+                fill="none"
+                stroke="#40916C"
+                stroke-width="4"
+                stroke-dasharray="100"
+                stroke-dashoffset="30"
+                transform="rotate(-90 25 25)"
+              />
+            </svg>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <button class="logout-btn" onclick="handleLogout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="page-header">
+          <button class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="page-title">
+            <h2 id="pageTitle">Home</h2>
+            <p id="pageSubtitle">Welcome back to your nutrition dashboard</p>
+          </div>
+          <div class="header-actions">
+            <span class="text-muted" id="currentDate"></span>
+          </div>
+        </header>
+
+        <div class="page-content">
+          <section id="homeSection" class="dashboard-section">
+            <div class="dashboard-hero">
+              <div class="hero-bg"></div>
+              <div class="hero-overlay"></div>
+              <div class="hero-content">
+                <h1 class="hero-greeting">
+                  Hello, <span id="heroUserName">User</span>
+                  <span class="emoji">🌿</span>
+                </h1>
+                <p class="hero-date">
+                  Welcome to your nutrition journey
+                </p>
+              </div>
+            </div>
+
+            <div class="stats-grid stagger-animate">
+              <div class="stat-card">
+                <div class="stat-icon calories">
+                  <i class="fas fa-fire"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="caloriesConsumed">0</h4>
+                  <p>Calories Today</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon water">
+                  <i class="fas fa-bullseye"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="caloriesRemaining">2000</h4>
+                  <p>Calories Remaining</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon meals">
+                  <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="calorieProgress">0%</h4>
+                  <p>Daily Progress</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon bmi">
+                  <i class="fas fa-weight"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="homeBmiValue">--</h4>
+                  <p>Your BMI</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="welcome-card">
+              <h2><i class="fas fa-seedling"></i> Daily Summary</h2>
+              <p>
+                Use the sidebar to manage your health details, food log, meal
+                plan, and weekly reports separately.
+              </p>
+            </div>
+          </section>
+
+          <section id="health-dataSection" class="dashboard-section hidden">
+            <div class="form-section">
+              <h3 class="form-section-title">
+                <i class="fas fa-heartbeat"></i> Health Data
+              </h3>
+
+              <form onsubmit="saveHealthData(event)">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="age">Age</label>
+                    <input
+                      type="number"
+                      id="age"
+                      class="form-control"
+                      placeholder="Enter age"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender" class="form-control form-select">
+                      <option value="">Select gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="weight">Weight (kg)</label>
+                    <input
+                      type="number"
+                      id="weight"
+                      class="form-control"
+                      placeholder="Enter weight"
+                      oninput="calculateBMI()"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="height">Height (cm)</label>
+                    <input
+                      type="number"
+                      id="height"
+                      class="form-control"
+                      placeholder="Enter height"
+                      oninput="calculateBMI()"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="activityLevel">Activity Level</label>
+                    <select id="activityLevel" class="form-control form-select">
+                      <option value="">Select activity level</option>
+                      <option value="low">Low</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="dietaryPreference">Dietary Preference</label>
+                    <select
+                      id="dietaryPreference"
+                      class="form-control form-select"
+                    >
+                      <option value="">Select preference</option>
+                      <option value="balanced">Balanced</option>
+                      <option value="vegetarian">Vegetarian</option>
+                      <option value="vegan">Vegan</option>
+                      <option value="keto">Keto</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="healthGoal">Health Goal</label>
+                    <select id="healthGoal" class="form-control form-select">
+                      <option value="">Select goal</option>
+                      <option value="weight-loss">Weight Loss</option>
+                      <option value="muscle-gain">Muscle Gain</option>
+                      <option value="maintenance">Maintenance</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="calorieLimit">Daily Calorie Limit</label>
+                    <input
+                      type="number"
+                      id="calorieLimit"
+                      class="form-control"
+                      placeholder="Enter calorie limit"
+                    />
+                  </div>
+                </div>
+
+                <div id="bmiDisplay" class="card hidden">
+                  <div class="card-body">
+                    <h4>BMI Result</h4>
+                    <p>
+                      BMI: <strong id="bmiValue">--</strong>
+                      <span id="bmiCategory" class="bmi-category normal">
+                        Normal
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3">
+                  <i class="fas fa-save"></i> Save Health Data
+                </button>
+              </form>
+            </div>
+          </section>
+
+          <section id="food-trackerSection" class="dashboard-section hidden">
+            <div class="card">
+              <div class="card-header">
+                <h3><i class="fas fa-utensils"></i> Food Tracker</h3>
+                <div class="search-box">
+                  <i class="fas fa-search"></i>
+                  <input
+                    type="text"
+                    id="foodSearch"
+                    placeholder="Search food log..."
+                    oninput="searchFood()"
+                  />
+                </div>
+              </div>
+              <div class="card-body">
+                <form onsubmit="addFoodEntry(event)">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="mealType">Meal Type</label>
+                      <select id="mealType" class="form-control form-select">
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snacks">Snacks</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="foodName">Food Name</label>
+                      <input
+                        type="text"
+                        id="foodName"
+                        class="form-control"
+                        placeholder="Enter food name"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="foodCalories">Calories</label>
+                      <input
+                        type="number"
+                        id="foodCalories"
+                        class="form-control"
+                        placeholder="Enter calories"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="foodQuantity">Quantity</label>
+                      <input
+                        type="number"
+                        id="foodQuantity"
+                        class="form-control"
+                        value="1"
+                        min="1"
+                      />
+                    </div>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Food Entry
+                  </button>
+                </form>
+
+                <div class="table-container mt-3">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Meal</th>
+                        <th>Food</th>
+                        <th>Calories</th>
+                        <th>Qty</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="foodLogBody"></tbody>
+                  </table>
+                </div>
+
+                <div id="foodLogEmpty" class="empty-state">
+                  <i class="fas fa-apple-alt"></i>
+                  <p>No food entries yet. Add your first meal above.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="diet-planSection" class="dashboard-section hidden">
+            <div class="section-header">
+              <h2 class="section-title">Your Diet Plan</h2>
+            </div>
+
+            <div class="diet-plan-grid">
+              <div class="time-card">
+                <div class="time-card-header">
+                  <i class="fas fa-coffee"></i>
+                  <span>Breakfast</span>
+                </div>
+                <div class="time-card-body">
+                  <div class="meal-list">
+                    <div class="meal-list-item">
+                      <i class="fas fa-check-circle"></i>
+                      <span>Oatmeal with berries</span>
+                    </div>
+                    <div class="meal-list-item">
+                      <i class="fas fa-check-circle"></i>
+                      <span>Greek yogurt</span>
+                    </div>
+                    <div class="meal-list-item">
+                      <i class="fas fa-circle"></i>
+                      <span>Fresh orange juice</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="time-card">
+                <div class="time-card-header">
+                  <i class="fas fa-utensils"></i>
+                  <span>Lunch</span>
+                </div>
+                <div class="time-card-body">
+                  <div class="meal-list">
+                    <div class="meal-list-item">
+                      <i class="fas fa-check-circle"></i>
+                      <span>Grilled chicken salad</span>
+                    </div>
+                    <div class="meal-list-item">
+                      <i class="fas fa-circle"></i>
+                      <span>Quinoa vegetables</span>
+                    </div>
+                    <div class="meal-list-item">
+                      <i class="fas fa-circle"></i>
+                      <span>Fruit smoothie</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="time-card">
+                <div class="time-card-header">
+                  <i class="fas fa-moon"></i>
+                  <span>Dinner</span>
+                </div>
+                <div class="time-card-body">
+                  <div class="meal-list">
+                    <div class="meal-list-item">
+                      <i class="fas fa-circle"></i>
+                      <span>Baked salmon</span>
+                    </div>
+                    <div class="meal-list-item">
+                      <i class="fas fa-circle"></i>
+                      <span>Steamed broccoli</span>
+                    </div>
+                    <div class="meal-list-item">
+                      <i class="fas fa-circle"></i>
+                      <span>Brown rice</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="time-card">
+                <div class="time-card-header">
+                  <i class="fas fa-cookie-bite"></i>
+                  <span>Snacks</span>
+                </div>
+                <div class="time-card-body">
+                  <div class="meal-list">
+                    <div class="meal-list-item">
+                      <i class="fas fa-check-circle"></i>
+                      <span>Mixed nuts</span>
+                    </div>
+                    <div class="meal-list-item">
+                      <i class="fas fa-circle"></i>
+                      <span>Apple with peanut butter</span>
+                    </div>
+                    <div class="meal-list-item">
+                      <i class="fas fa-circle"></i>
+                      <span>Protein bar</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="reportsSection" class="dashboard-section hidden">
+            <div class="card">
+              <div class="card-header">
+                <h3><i class="fas fa-chart-column"></i> Weekly Reports</h3>
+              </div>
+              <div class="card-body">
+                <div style="height: 320px;">
+                  <canvas id="weeklyChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="stats-grid mt-3">
+              <div class="stat-card">
+                <div class="stat-icon calories">
+                  <i class="fas fa-fire"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="avgCalories">0</h4>
+                  <p>Average Daily Calories</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon water">
+                  <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="daysTracked">0</h4>
+                  <p>Days Tracked</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon meals">
+                  <i class="fas fa-bolt"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="streakDays">0</h4>
+                  <p>Current Streak</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon bmi">
+                  <i class="fas fa-bullseye"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="totalCalories">0</h4>
+                  <p>Today's Total Calories</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/user.js"></script>
+  </body>
+</html>

@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dietitian Dashboard - HealthyLife</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="dashboard-layout">
+      <aside class="sidebar dietitian-sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-logo">
+            <i class="fas fa-leaf"></i>
+            <span>HealthyLife</span>
+          </div>
+        </div>
+
+        <div class="user-profile">
+          <div
+            class="user-avatar"
+            id="dietitianAvatar"
+            style="background: linear-gradient(135deg, #0F4C5C, #5DADE2);"
+          >
+            D
+          </div>
+          <div class="user-name" id="dietitianName">Dietitian</div>
+          <div class="user-role">Dietitian</div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="nav-item active" data-section="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+          </div>
+          <div class="nav-item" data-section="assigned-users">
+            <i class="fas fa-users"></i>
+            <span>Assigned Users</span>
+          </div>
+          <div class="nav-item" data-section="create-plan">
+            <i class="fas fa-plus-square"></i>
+            <span>Create Meal Plan</span>
+          </div>
+          <div class="nav-item" data-section="feedback">
+            <i class="fas fa-comment-dots"></i>
+            <span>Feedback</span>
+          </div>
+        </nav>
+
+        <div class="sidebar-footer">
+          <button class="logout-btn" onclick="handleLogout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <div class="dashboard-hero">
+          <div class="hero-bg"></div>
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <h1 class="hero-greeting">
+              Welcome, <span id="heroDietitianName">Dietitian</span>
+              <span class="emoji">👨‍⚕️</span>
+            </h1>
+            <p class="hero-date" id="currentDate">
+              Manage your patients' nutrition journey
+            </p>
+          </div>
+        </div>
+
+        <div class="stats-grid stagger-animate">
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="background: rgba(15, 76, 92, 0.15); color: #0F4C5C;"
+            >
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+              <h4 id="totalPatients">12</h4>
+              <p>Total Patients</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="background: rgba(46, 204, 113, 0.15); color: #2ECC71;"
+            >
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+              <h4 id="activePlans">8</h4>
+              <p>Active Plans</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="background: rgba(212, 160, 23, 0.15); color: #D4A017;"
+            >
+              <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-info">
+              <h4 id="avgRating">4.8</h4>
+              <p>Avg Rating</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div
+              class="stat-icon"
+              style="background: rgba(52, 152, 219, 0.15); color: #3498DB;"
+            >
+              <i class="fas fa-comments"></i>
+            </div>
+            <div class="stat-info">
+              <h4 id="pendingFeedback">5</h4>
+              <p>Pending Feedback</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header">
+            <h2 class="section-title">Create Meal Plan</h2>
+          </div>
+
+          <div class="plan-wizard">
+            <div class="wizard-step active">
+              <div class="step-number">1</div>
+              <div class="step-label">Select Patient</div>
+            </div>
+            <div class="wizard-step">
+              <div class="step-number">2</div>
+              <div class="step-label">Set Goals</div>
+            </div>
+            <div class="wizard-step">
+              <div class="step-number">3</div>
+              <div class="step-label">Design Meals</div>
+            </div>
+            <div class="wizard-step">
+              <div class="step-number">4</div>
+              <div class="step-label">Review & Send</div>
+            </div>
+          </div>
+
+          <div class="section-header mt-3">
+            <h2 class="section-title">Your Patients</h2>
+            <button class="btn btn-primary">
+              <i class="fas fa-plus"></i> Add Patient
+            </button>
+          </div>
+
+          <div class="card">
+            <table class="patient-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Age</th>
+                  <th>Goal</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="patientsTableBody">
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar">JD</div>
+                      <div>
+                        <div class="patient-name">John Doe</div>
+                        <div class="patient-email">john@example.com</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>35</td>
+                  <td>Weight Loss</td>
+                  <td>
+                    <div class="progress-cell">
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: 75%;"></div>
+                      </div>
+                      <span>75%</span>
+                    </div>
+                  </td>
+                  <td><span class="status-badge on-track">On Track</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="view-btn" title="View">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="edit-btn" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="delete-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar">SM</div>
+                      <div>
+                        <div class="patient-name">Sarah Miller</div>
+                        <div class="patient-email">sarah@example.com</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>28</td>
+                  <td>Muscle Gain</td>
+                  <td>
+                    <div class="progress-cell">
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: 45%;"></div>
+                      </div>
+                      <span>45%</span>
+                    </div>
+                  </td>
+                  <td><span class="status-badge under">Under</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="view-btn" title="View">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="edit-btn" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="delete-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="patient-cell">
+                      <div class="patient-avatar">RJ</div>
+                      <div>
+                        <div class="patient-name">Robert Johnson</div>
+                        <div class="patient-email">robert@example.com</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>42</td>
+                  <td>Maintenance</td>
+                  <td>
+                    <div class="progress-cell">
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: 90%;"></div>
+                      </div>
+                      <span>90%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-badge completed">Completed</span>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="view-btn" title="View">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="edit-btn" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="delete-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/charts.js"></script>
+    <script src="js/dietitian.js"></script>
+  </body>
+</html>
