@@ -12,7 +12,7 @@ $userId = current_user_id();
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $query = $pdo->prepare(
         'SELECT age, gender, weight, height, activity_level, dietary_preference, health_goal, calorie_limit, updated_at
-         FROM health_data
+         FROM app_health_data
          WHERE user_id = :user_id
          LIMIT 1'
     );
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     $stmt = $pdo->prepare(
-        'INSERT INTO health_data (user_id, age, gender, weight, height, activity_level, dietary_preference, health_goal, calorie_limit)
+        'INSERT INTO app_health_data (user_id, age, gender, weight, height, activity_level, dietary_preference, health_goal, calorie_limit)
          VALUES (:user_id, :age, :gender, :weight, :height, :activity_level, :dietary_preference, :health_goal, :calorie_limit)
          ON DUPLICATE KEY UPDATE
             age = VALUES(age),

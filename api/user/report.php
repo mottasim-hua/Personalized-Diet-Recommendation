@@ -15,14 +15,14 @@ $userId = current_user_id();
 $startDate = sanitize_string(get_query_param('start_date', date('Y-m-d', strtotime('-6 days'))));
 $endDate = sanitize_string(get_query_param('end_date', date('Y-m-d')));
 
-$limitStmt = $pdo->prepare('SELECT calorie_limit FROM health_data WHERE user_id = :user_id LIMIT 1');
+$limitStmt = $pdo->prepare('SELECT calorie_limit FROM app_health_data WHERE user_id = :user_id LIMIT 1');
 $limitStmt->execute(['user_id' => $userId]);
 $health = $limitStmt->fetch();
 $calorieLimit = isset($health['calorie_limit']) ? (int) $health['calorie_limit'] : null;
 
 $reportStmt = $pdo->prepare(
     'SELECT logged_date AS date, SUM(calories) AS total_calories
-     FROM food_logs
+     FROM app_food_logs
      WHERE user_id = :user_id AND logged_date BETWEEN :start_date AND :end_date
      GROUP BY logged_date
      ORDER BY logged_date ASC'

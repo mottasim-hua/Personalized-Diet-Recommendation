@@ -16,11 +16,341 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=20260511-1" />
+    <style>
+      .dashboard-section {
+        animation: fadeUp 0.35s ease;
+      }
+
+      .dietitian-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .dietitian-actions .btn {
+        min-width: 0;
+      }
+
+      .section-copy p {
+        color: var(--text-muted);
+        margin-top: 0.35rem;
+      }
+
+      .home-grid,
+      .feedback-grid,
+      .plan-list-grid,
+      .quick-actions-grid {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .home-grid {
+        grid-template-columns: 1.35fr 1fr;
+      }
+
+      .quick-actions-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .activity-list,
+      .feedback-list,
+      .plan-list-grid {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .activity-item,
+      .feedback-card,
+      .plan-card,
+      .quick-action-card {
+        padding: 1rem 1.1rem;
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(27, 67, 50, 0.08);
+        background: rgba(248, 244, 227, 0.4);
+      }
+
+      .activity-item {
+        display: flex;
+        gap: 0.9rem;
+        align-items: flex-start;
+      }
+
+      .activity-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(64, 145, 108, 0.14);
+        color: var(--accent-green);
+        flex-shrink: 0;
+      }
+
+      .activity-item p,
+      .quick-action-card p,
+      .plan-card p,
+      .feedback-card p {
+        margin-top: 0.35rem;
+        color: var(--text-muted);
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+      }
+
+      .hero-actions .btn {
+        min-width: 0;
+      }
+
+      .toolbar-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+      }
+
+      .toolbar-filters {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .toolbar-filters .form-control,
+      .toolbar-filters .btn {
+        min-height: 48px;
+      }
+
+      .modal-backdrop,
+      .drawer-backdrop,
+      .confirm-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 42, 31, 0.48);
+        z-index: 1290;
+      }
+
+      .modal-shell,
+      .confirm-shell {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1300;
+        width: min(920px, calc(100vw - 2rem));
+        max-height: calc(100vh - 2rem);
+        overflow: auto;
+        background: var(--white);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        padding: 1.5rem;
+      }
+
+      .drawer-shell {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 1300;
+        width: min(460px, 100vw);
+        height: 100vh;
+        overflow: auto;
+        background: var(--white);
+        box-shadow: -12px 0 34px rgba(15, 42, 31, 0.18);
+        padding: 1.5rem;
+      }
+
+      .modal-shell.hidden,
+      .modal-backdrop.hidden,
+      .drawer-shell.hidden,
+      .drawer-backdrop.hidden,
+      .confirm-shell.hidden,
+      .confirm-backdrop.hidden {
+        display: none !important;
+      }
+
+      .modal-header,
+      .drawer-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .modal-header h3,
+      .drawer-header h3 {
+        margin-bottom: 0.3rem;
+      }
+
+      .close-btn {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(27, 67, 50, 0.08);
+        color: var(--primary-green);
+      }
+
+      .error-text {
+        margin-top: 0.45rem;
+        color: var(--danger);
+        font-size: 0.82rem;
+        min-height: 18px;
+      }
+
+      .modal-footer,
+      .confirm-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+      }
+
+      .drawer-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+      }
+
+      .drawer-stat {
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        background: rgba(237, 232, 213, 0.46);
+      }
+
+      .drawer-stat strong {
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+
+      .meal-builder {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .meal-day {
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(27, 67, 50, 0.08);
+        background: rgba(255, 255, 255, 0.86);
+        padding: 1rem;
+      }
+
+      .meal-day-header,
+      .meal-group-header,
+      .plan-card-header,
+      .feedback-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .meal-group {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        background: rgba(248, 244, 227, 0.42);
+        border: 1px dashed rgba(27, 67, 50, 0.14);
+      }
+
+      .meal-items {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .meal-item {
+        padding: 0.9rem;
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(27, 67, 50, 0.08);
+      }
+
+      .meal-item-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.8fr 0.6fr;
+        gap: 0.75rem;
+      }
+
+      .meal-item textarea {
+        margin-top: 0.75rem;
+      }
+
+      .feedback-note {
+        margin-top: 0.85rem;
+      }
+
+      .feedback-note textarea {
+        min-height: 100px;
+      }
+
+      .plan-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin-top: 0.85rem;
+      }
+
+      .plan-summary-box {
+        padding: 0.9rem;
+        border-radius: var(--radius-md);
+        background: rgba(237, 232, 213, 0.46);
+      }
+
+      .empty-inline {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: var(--text-muted);
+      }
+
+      .inline-loader {
+        opacity: 0.72;
+        pointer-events: none;
+      }
+
+      .btn.loading {
+        opacity: 0.75;
+        pointer-events: none;
+      }
+
+      .btn.loading i {
+        animation: pulse 1s infinite;
+      }
+
+      @media (max-width: 1024px) {
+        .home-grid,
+        .quick-actions-grid,
+        .feedback-grid,
+        .plan-summary-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .meal-item-grid,
+        .drawer-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .modal-shell,
+        .confirm-shell {
+          width: calc(100vw - 1rem);
+          padding: 1rem;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="dashboard-layout">
-      <aside class="sidebar dietitian-sidebar">
+      <aside class="sidebar dietitian-sidebar" id="sidebar">
         <div class="sidebar-header">
           <div class="sidebar-logo">
             <i class="fas fa-leaf"></i>
@@ -67,232 +397,417 @@
       </aside>
 
       <main class="main-content">
-        <div class="dashboard-hero">
-          <div class="hero-bg"></div>
-          <div class="hero-overlay"></div>
-          <div class="hero-content">
-            <h1 class="hero-greeting">
-              Welcome, <span id="heroDietitianName">Dietitian</span>
-              <span class="emoji">👨‍⚕️</span>
-            </h1>
-            <p class="hero-date" id="currentDate">
-              Manage your patients' nutrition journey
-            </p>
+        <header class="page-header">
+          <button class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="page-title">
+            <h2 id="pageTitle">Dashboard</h2>
+            <p id="pageSubtitle">Welcome back to your client management workspace</p>
           </div>
-        </div>
+          <div class="header-actions">
+            <span class="text-muted" id="currentDate"></span>
+          </div>
+        </header>
 
-        <div class="stats-grid stagger-animate">
-          <div class="stat-card">
-            <div
-              class="stat-icon"
-              style="background: rgba(15, 76, 92, 0.15); color: #0F4C5C;"
-            >
-              <i class="fas fa-users"></i>
+        <div class="page-content">
+          <section id="homeSection" class="dashboard-section">
+            <div class="dashboard-hero">
+              <div class="hero-bg"></div>
+              <div class="hero-overlay"></div>
+              <div class="hero-content">
+                <h1 class="hero-greeting">
+                  Welcome, <span id="heroDietitianName">Dietitian</span>
+                  <span class="emoji">👨‍⚕️</span>
+                </h1>
+                <p class="hero-date" id="heroDateLine">Manage your assigned users and nutrition plans with confidence.</p>
+                <div class="hero-actions">
+                  <button class="btn btn-primary" onclick="jumpToSection('assigned-users')">
+                    <i class="fas fa-user-plus"></i> Go to Assign Users
+                  </button>
+                  <button class="btn btn-primary" onclick="jumpToSection('create-plan')">
+                    <i class="fas fa-bowl-food"></i> Create Plan
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="stat-info">
-              <h4 id="totalPatients">12</h4>
-              <p>Total Patients</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div
-              class="stat-icon"
-              style="background: rgba(46, 204, 113, 0.15); color: #2ECC71;"
-            >
-              <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stat-info">
-              <h4 id="activePlans">8</h4>
-              <p>Active Plans</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div
-              class="stat-icon"
-              style="background: rgba(212, 160, 23, 0.15); color: #D4A017;"
-            >
-              <i class="fas fa-star"></i>
-            </div>
-            <div class="stat-info">
-              <h4 id="avgRating">4.8</h4>
-              <p>Avg Rating</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div
-              class="stat-icon"
-              style="background: rgba(52, 152, 219, 0.15); color: #3498DB;"
-            >
-              <i class="fas fa-comments"></i>
-            </div>
-            <div class="stat-info">
-              <h4 id="pendingFeedback">5</h4>
-              <p>Pending Feedback</p>
-            </div>
-          </div>
-        </div>
 
-        <div class="content-section">
-          <div class="section-header">
-            <h2 class="section-title">Create Meal Plan</h2>
-          </div>
+            <div class="stats-grid stagger-animate">
+              <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(15, 76, 92, 0.15); color: #0F4C5C;">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="usersCount">0</h4>
+                  <p>Total Assigned Users</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(46, 204, 113, 0.15); color: #2ECC71;">
+                  <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="plansCount">0</h4>
+                  <p>Meal Plans Created</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(212, 160, 23, 0.15); color: #D4A017;">
+                  <i class="fas fa-comment-medical"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="feedbackCount">0</h4>
+                  <p>Pending Feedback</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(52, 152, 219, 0.15); color: #3498DB;">
+                  <i class="fas fa-heart-pulse"></i>
+                </div>
+                <div class="stat-info">
+                  <h4 id="activePlansCount">0</h4>
+                  <p>Active Plans</p>
+                </div>
+              </div>
+            </div>
 
-          <div class="plan-wizard">
-            <div class="wizard-step active">
-              <div class="step-number">1</div>
-              <div class="step-label">Select Patient</div>
-            </div>
-            <div class="wizard-step">
-              <div class="step-number">2</div>
-              <div class="step-label">Set Goals</div>
-            </div>
-            <div class="wizard-step">
-              <div class="step-number">3</div>
-              <div class="step-label">Design Meals</div>
-            </div>
-            <div class="wizard-step">
-              <div class="step-number">4</div>
-              <div class="step-label">Review & Send</div>
-            </div>
-          </div>
+            <div class="home-grid mt-3">
+              <div class="card">
+                <div class="section-header">
+                  <div class="section-copy">
+                    <h2 class="section-title">Recent Activity</h2>
+                    <p>Fresh dashboard updates from users, plans, and feedback.</p>
+                  </div>
+                </div>
+                <div class="activity-list" id="activityFeed"></div>
+              </div>
 
-          <div class="section-header mt-3">
-            <h2 class="section-title">Your Patients</h2>
-            <button class="btn btn-primary">
-              <i class="fas fa-plus"></i> Add Patient
-            </button>
-          </div>
+              <div class="card">
+                <div class="section-header">
+                  <div class="section-copy">
+                    <h2 class="section-title">Quick Actions</h2>
+                    <p>Jump straight into your daily workflow.</p>
+                  </div>
+                </div>
+                <div class="quick-actions-grid">
+                  <button class="quick-action-card" type="button" onclick="jumpToSection('assigned-users')">
+                    <strong><i class="fas fa-address-card"></i> Assign Users</strong>
+                    <p>Review client profiles, statuses, goals, and diet preferences.</p>
+                  </button>
+                  <button class="quick-action-card" type="button" onclick="jumpToSection('create-plan')">
+                    <strong><i class="fas fa-utensils"></i> Create Plan</strong>
+                    <p>Build daily meals with calories, portions, and notes.</p>
+                  </button>
+                  <button class="quick-action-card" type="button" onclick="openUserModal()">
+                    <strong><i class="fas fa-user-plus"></i> Add New User</strong>
+                    <p>Add a new assigned client into your working list.</p>
+                  </button>
+                  <button class="quick-action-card" type="button" onclick="jumpToSection('feedback')">
+                    <strong><i class="fas fa-notes-medical"></i> Review Feedback</strong>
+                    <p>Clear pending responses and keep care notes updated.</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
 
-          <div class="card">
-            <table class="patient-table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Age</th>
-                  <th>Goal</th>
-                  <th>Progress</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="patientsTableBody">
-                <tr>
-                  <td>
-                    <div class="patient-cell">
-                      <div class="patient-avatar">JD</div>
-                      <div>
-                        <div class="patient-name">John Doe</div>
-                        <div class="patient-email">john@example.com</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>35</td>
-                  <td>Weight Loss</td>
-                  <td>
-                    <div class="progress-cell">
-                      <div class="progress-bar">
-                        <div class="progress-fill" style="width: 75%;"></div>
-                      </div>
-                      <span>75%</span>
-                    </div>
-                  </td>
-                  <td><span class="status-badge on-track">On Track</span></td>
-                  <td>
-                    <div class="table-actions">
-                      <button class="view-btn" title="View">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                      <button class="edit-btn" title="Edit">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="delete-btn" title="Delete">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="patient-cell">
-                      <div class="patient-avatar">SM</div>
-                      <div>
-                        <div class="patient-name">Sarah Miller</div>
-                        <div class="patient-email">sarah@example.com</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>28</td>
-                  <td>Muscle Gain</td>
-                  <td>
-                    <div class="progress-cell">
-                      <div class="progress-bar">
-                        <div class="progress-fill" style="width: 45%;"></div>
-                      </div>
-                      <span>45%</span>
-                    </div>
-                  </td>
-                  <td><span class="status-badge under">Under</span></td>
-                  <td>
-                    <div class="table-actions">
-                      <button class="view-btn" title="View">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                      <button class="edit-btn" title="Edit">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="delete-btn" title="Delete">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="patient-cell">
-                      <div class="patient-avatar">RJ</div>
-                      <div>
-                        <div class="patient-name">Robert Johnson</div>
-                        <div class="patient-email">robert@example.com</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>42</td>
-                  <td>Maintenance</td>
-                  <td>
-                    <div class="progress-cell">
-                      <div class="progress-bar">
-                        <div class="progress-fill" style="width: 90%;"></div>
-                      </div>
-                      <span>90%</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="status-badge completed">Completed</span>
-                  </td>
-                  <td>
-                    <div class="table-actions">
-                      <button class="view-btn" title="View">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                      <button class="edit-btn" title="Edit">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="delete-btn" title="Delete">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <section id="assigned-usersSection" class="dashboard-section hidden">
+            <div class="section-header">
+              <div class="section-copy">
+                <h2 class="section-title">Assigned Users</h2>
+                <p>Search, filter, add, edit, view, and remove users from your dashboard.</p>
+              </div>
+              <button class="btn btn-primary" type="button" onclick="openUserModal()">
+                <i class="fas fa-plus"></i> Add New User
+              </button>
+            </div>
+
+            <div class="toolbar-row">
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="userSearch" placeholder="Search by name, goal, or diet type..." />
+              </div>
+              <div class="toolbar-filters">
+                <select id="goalFilter" class="form-control form-select">
+                  <option value="">All Goals</option>
+                  <option value="Weight Loss">Weight Loss</option>
+                  <option value="Muscle Gain">Muscle Gain</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Diabetes Control">Diabetes Control</option>
+                </select>
+                <select id="dietFilter" class="form-control form-select">
+                  <option value="">All Diet Types</option>
+                  <option value="Balanced">Balanced</option>
+                  <option value="Vegetarian">Vegetarian</option>
+                  <option value="Vegan">Vegan</option>
+                  <option value="High Protein">High Protein</option>
+                  <option value="Low Carb">Low Carb</option>
+                </select>
+                <select id="statusFilter" class="form-control form-select">
+                  <option value="">All Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="table-container">
+                <table class="patient-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Age</th>
+                      <th>Goal</th>
+                      <th>Diet Type</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usersTableBody"></tbody>
+                </table>
+              </div>
+              <div id="usersEmpty" class="empty-state hidden">
+                <i class="fas fa-user-slash"></i>
+                <p>No users match the current search or filter.</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="create-planSection" class="dashboard-section hidden">
+            <div class="section-header">
+              <div class="section-copy">
+                <h2 class="section-title">Create Meal Plan</h2>
+                <p>Create and manage complete meal plans linked to assigned users.</p>
+              </div>
+            </div>
+
+            <div class="plan-wizard">
+              <div class="wizard-step active">
+                <div class="step-number">1</div>
+                <div class="step-label">Select User</div>
+              </div>
+              <div class="wizard-step active">
+                <div class="step-number">2</div>
+                <div class="step-label">Set Schedule</div>
+              </div>
+              <div class="wizard-step active">
+                <div class="step-number">3</div>
+                <div class="step-label">Build Meals</div>
+              </div>
+              <div class="wizard-step active">
+                <div class="step-number">4</div>
+                <div class="step-label">Save Plan</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <form id="mealPlanForm">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="planUserId">Assigned User</label>
+                    <select id="planUserId" name="userId" class="form-control form-select"></select>
+                    <div class="error-text" data-error-for="userId"></div>
+                  </div>
+                  <div class="form-group">
+                    <label for="planName">Plan Name</label>
+                    <input type="text" id="planName" name="planName" class="form-control" placeholder="Enter plan name" />
+                    <div class="error-text" data-error-for="planName"></div>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="planStartDate">Start Date</label>
+                    <input type="date" id="planStartDate" name="startDate" class="form-control" />
+                    <div class="error-text" data-error-for="startDate"></div>
+                  </div>
+                  <div class="form-group">
+                    <label for="planEndDate">End Date</label>
+                    <input type="date" id="planEndDate" name="endDate" class="form-control" />
+                    <div class="error-text" data-error-for="endDate"></div>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="planCalories">Calorie Target</label>
+                    <input type="number" id="planCalories" name="calorieTarget" class="form-control" min="1000" placeholder="Daily target calories" />
+                    <div class="error-text" data-error-for="calorieTarget"></div>
+                  </div>
+                  <div class="form-group">
+                    <label for="planDays">Number of Days</label>
+                    <input type="number" id="planDays" name="dayCount" class="form-control" min="1" max="14" value="3" />
+                    <div class="error-text" data-error-for="dayCount"></div>
+                  </div>
+                </div>
+
+                <div class="section-header mt-3">
+                  <div class="section-copy">
+                    <h2 class="section-title" style="font-size: 1.25rem;">Day-by-Day Meal Builder</h2>
+                    <p>Add breakfast, lunch, dinner, and snacks for each day.</p>
+                  </div>
+                  <div class="dietitian-actions">
+                    <button type="button" class="btn btn-primary" id="generateDaysBtn">
+                      <i class="fas fa-layer-group"></i> Refresh Days
+                    </button>
+                    <button type="button" class="btn" id="resetPlanBtn">
+                      <i class="fas fa-rotate-left"></i> Reset Form
+                    </button>
+                  </div>
+                </div>
+
+                <div class="meal-builder" id="mealBuilder"></div>
+
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary" id="savePlanBtn">
+                    <i class="fas fa-save"></i> Save Plan
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="section-header mt-3">
+              <div class="section-copy">
+                <h2 class="section-title">Existing Plans</h2>
+                <p>Edit or delete saved plans from your current session.</p>
+              </div>
+            </div>
+            <div class="plan-list-grid" id="plansList"></div>
+          </section>
+
+          <section id="feedbackSection" class="dashboard-section hidden">
+            <div class="section-header">
+              <div class="section-copy">
+                <h2 class="section-title">Feedback</h2>
+                <p>Filter by user or status, write responses, and mark items as reviewed.</p>
+              </div>
+            </div>
+
+            <div class="toolbar-row">
+              <div class="toolbar-filters">
+                <select id="feedbackUserFilter" class="form-control form-select"></select>
+                <select id="feedbackStatusFilter" class="form-control form-select">
+                  <option value="">All Status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Reviewed">Reviewed</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="feedback-list" id="feedbackList"></div>
+          </section>
         </div>
       </main>
     </div>
 
+    <div id="userModalBackdrop" class="modal-backdrop hidden"></div>
+    <div id="userModal" class="modal-shell hidden">
+      <div class="modal-header">
+        <div>
+          <h3 id="userModalTitle">Add New User</h3>
+          <p class="text-muted">Create or update an assigned user profile.</p>
+        </div>
+        <button class="close-btn" type="button" onclick="closeUserModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form id="userForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="userName">Name</label>
+            <input type="text" id="userName" name="name" class="form-control" />
+            <div class="error-text" data-error-for="name"></div>
+          </div>
+          <div class="form-group">
+            <label for="userAge">Age</label>
+            <input type="number" id="userAge" name="age" class="form-control" min="10" max="100" />
+            <div class="error-text" data-error-for="age"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="userWeight">Weight (kg)</label>
+            <input type="number" id="userWeight" name="weight" class="form-control" step="0.1" min="20" />
+            <div class="error-text" data-error-for="weight"></div>
+          </div>
+          <div class="form-group">
+            <label for="userHeight">Height (cm)</label>
+            <input type="number" id="userHeight" name="height" class="form-control" min="90" />
+            <div class="error-text" data-error-for="height"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="userGoal">Health Goal</label>
+            <select id="userGoal" name="goal" class="form-control form-select">
+              <option value="">Select goal</option>
+              <option value="Weight Loss">Weight Loss</option>
+              <option value="Muscle Gain">Muscle Gain</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Diabetes Control">Diabetes Control</option>
+            </select>
+            <div class="error-text" data-error-for="goal"></div>
+          </div>
+          <div class="form-group">
+            <label for="userDietType">Diet Preference</label>
+            <select id="userDietType" name="dietType" class="form-control form-select">
+              <option value="">Select diet type</option>
+              <option value="Balanced">Balanced</option>
+              <option value="Vegetarian">Vegetarian</option>
+              <option value="Vegan">Vegan</option>
+              <option value="High Protein">High Protein</option>
+              <option value="Low Carb">Low Carb</option>
+            </select>
+            <div class="error-text" data-error-for="dietType"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="userAllergies">Allergies</label>
+            <input type="text" id="userAllergies" name="allergies" class="form-control" placeholder="Write None if there are no allergies" />
+            <div class="error-text" data-error-for="allergies"></div>
+          </div>
+          <div class="form-group">
+            <label for="userStatus">Status</label>
+            <select id="userStatus" name="status" class="form-control form-select">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" onclick="closeUserModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveUserBtn">
+            <i class="fas fa-save"></i> Save User
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="userDrawerBackdrop" class="drawer-backdrop hidden"></div>
+    <div id="userDrawer" class="drawer-shell hidden"></div>
+
+    <div id="confirmBackdrop" class="confirm-backdrop hidden"></div>
+    <div id="confirmModal" class="confirm-shell hidden">
+      <div class="modal-header">
+        <div>
+          <h3 id="confirmTitle">Confirm action</h3>
+          <p id="confirmMessage" class="text-muted">Are you sure?</p>
+        </div>
+      </div>
+      <div class="confirm-actions">
+        <button type="button" class="btn" onclick="closeConfirmModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmActionBtn">
+          <i class="fas fa-check"></i> Confirm
+        </button>
+      </div>
+    </div>
+
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="js/charts.js"></script>
-    <script src="js/dietitian.js"></script>
+    <script src="js/auth.js?v=20260511-1"></script>
+    <script src="js/charts.js?v=20260511-1"></script>
+    <script src="js/dietitian.js?v=20260511-1"></script>
   </body>
 </html>

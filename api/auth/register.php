@@ -23,39 +23,60 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     send_json(['success' => false, 'message' => 'Invalid email address.'], 422);
 }
 
+$role = normalize_user_role($role);
+
 if (!in_array($role, ['user', 'dietitian', 'admin'], true)) {
     send_json(['success' => false, 'message' => 'Invalid role selected.'], 422);
 }
 
 $pdo = get_db();
 
-$check = $pdo->prepare('SELECT id FROM users WHERE email = :email LIMIT 1');
+$userPk = user_primary_key_column($pdo);
+$check = $pdo->prepare("SELECT $userPk AS id FROM users WHERE email = :email LIMIT 1");
 $check->execute(['email' => $email]);
 
 if ($check->fetch()) {
     send_json(['success' => false, 'message' => 'An account with this email already exists.'], 409);
 }
 
-$insert = $pdo->prepare(
-    users_has_column($pdo, 'password')
-        ? 'INSERT INTO users (name, email, password, password_hash, role) VALUES (:name, :email, :password, :password_hash, :role)'
-        : 'INSERT INTO users (name, email, password_hash, role) VALUES (:name, :email, :password_hash, :role)'
-);
-
 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+$roleValue = ucfirst($role);
 
-$params = [
-    'name' => $name,
-    'email' => $email,
-    'password_hash' => $passwordHash,
-    'role' => $role,
-];
+if (users_has_column($pdo, 'name')) {
+    $insert = $pdo->prepare(
+        users_has_column($pdo, 'password')
+            ? 'INSERT INTO users (name, email, password, password_hash, role) VALUES (:name, :email, :password, :password_hash, :role)'
+            : 'INSERT INTO users (name, email, password_hash, role) VALUES (:name, :email, :password_hash, :role)'
+    );
 
-if (users_has_column($pdo, 'password')) {
-    $params['password'] = $passwordHash;
+    $params = [
+        'name' => $name,
+        'email' => $email,
+        'password_hash' => $passwordHash,
+        'role' => $role,
+    ];
+
+    if (users_has_column($pdo, 'password')) {
+        $params['password'] = $passwordHash;
+    }
+
+    $insert->execute($params);
+} else {
+    $nameParts = split_full_name($name);
+    $insert = $pdo->prepare(
+        'INSERT INTO users (email, password_hash, first_name, last_name, gender, date_of_birth, role)
+         VALUES (:email, :password_hash, :first_name, :last_name, :gender, :date_of_birth, :role)'
+    );
+    $insert->execute([
+        'email' => $email,
+        'password_hash' => $passwordHash,
+        'first_name' => $nameParts['first_name'] !== '' ? $nameParts['first_name'] : 'User',
+        'last_name' => $nameParts['last_name'],
+        'gender' => 'Other',
+        'date_of_birth' => '1990-01-01',
+        'role' => $roleValue,
+    ]);
 }
-
-$insert->execute($params);
 
 session_regenerate_id(true);
 $_SESSION['user_id'] = (int) $pdo->lastInsertId();

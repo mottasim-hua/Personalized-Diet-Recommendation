@@ -16,6 +16,92 @@ function getApiUrl(path) {
   return path;
 }
 
+function getLocalAuthUsers() {
+  const savedUsers = localStorage.getItem('dietSystemLocalUsers');
+
+  if (!savedUsers) {
+    return [];
+  }
+
+  try {
+    const users = JSON.parse(savedUsers);
+    return Array.isArray(users) ? users : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveLocalAuthUsers(users) {
+  localStorage.setItem('dietSystemLocalUsers', JSON.stringify(users));
+}
+
+function loginWithLocalAuth(email, password) {
+  const users = getLocalAuthUsers();
+  const matchedUser = users.find(user => user.email.toLowerCase() === email.toLowerCase() && user.password === password);
+
+  if (!matchedUser) {
+    return {
+      success: false,
+      message: 'Invalid email or password.'
+    };
+  }
+
+  const sessionUser = {
+    id: matchedUser.id,
+    name: matchedUser.name,
+    email: matchedUser.email,
+    role: matchedUser.role,
+    loginTime: new Date().toISOString()
+  };
+
+  localStorage.setItem('dietSystemUser', JSON.stringify(sessionUser));
+
+  return {
+    success: true,
+    user: sessionUser
+  };
+}
+
+function registerWithLocalAuth(name, email, password, role) {
+  const users = getLocalAuthUsers();
+  const normalizedEmail = email.toLowerCase();
+  const existingUser = users.find(user => user.email.toLowerCase() === normalizedEmail);
+
+  if (existingUser) {
+    return {
+      success: false,
+      message: 'An account with this email already exists.'
+    };
+  }
+
+  const createdUser = {
+    id: Date.now(),
+    name,
+    email,
+    password,
+    role,
+    createdAt: new Date().toISOString()
+  };
+
+  users.push(createdUser);
+  saveLocalAuthUsers(users);
+
+  const sessionUser = {
+    id: createdUser.id,
+    name: createdUser.name,
+    email: createdUser.email,
+    role: createdUser.role,
+    loginTime: new Date().toISOString()
+  };
+
+  localStorage.setItem('dietSystemUser', JSON.stringify(sessionUser));
+
+  return {
+    success: true,
+    user: sessionUser
+  };
+}
+
 async function parseJsonResponse(response) {
   const text = await response.text();
 
@@ -32,12 +118,12 @@ async function parseJsonResponse(response) {
 async function checkServerConnection() {
   if (isRunningFromFile()) {
     return {
-      success: false,
-      message: 'Open this project through XAMPP/localhost. PHP login will not work from a direct file path.'
+      success: true,
+      mode: 'local'
     };
   }
 
-  return { success: true };
+  return { success: true, mode: 'server' };
 }
 
 // Toggle between login and register forms
@@ -127,6 +213,19 @@ async function handleLogin(event) {
     showToast(connection.message, 'error');
     return;
   }
+
+  if (connection.mode === 'local') {
+    const result = loginWithLocalAuth(email, password);
+
+    if (!result.success) {
+      showToast(result.message || 'Login failed', 'error');
+      return;
+    }
+
+    showToast('Login successful! Running in local mode.', 'success');
+    redirectByRole(result.user.role);
+    return;
+  }
   
   try {
     const response = await fetch(getApiUrl('api/auth/login.php'), {
@@ -189,6 +288,19 @@ async function handleRegister(event) {
   const connection = await checkServerConnection();
   if (!connection.success) {
     showToast(connection.message, 'error');
+    return;
+  }
+
+  if (connection.mode === 'local') {
+    const result = registerWithLocalAuth(name, email, password, role);
+
+    if (!result.success) {
+      showToast(result.message || 'Registration failed', 'error');
+      return;
+    }
+
+    showToast('Registration successful! Running in local mode.', 'success');
+    redirectByRole(result.user.role);
     return;
   }
   

@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $query = $pdo->prepare(
         'SELECT id, food_name, calories, meal_type, logged_date, created_at
-         FROM food_logs
+         FROM app_food_logs
          WHERE user_id = :user_id AND logged_date = :logged_date
          ORDER BY created_at DESC'
     );
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $stmt = $pdo->prepare(
-        'INSERT INTO food_logs (user_id, food_name, calories, meal_type, logged_date)
+        'INSERT INTO app_food_logs (user_id, food_name, calories, meal_type, logged_date)
          VALUES (:user_id, :food_name, :calories, :meal_type, :logged_date)'
     );
     $stmt->execute([
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         send_json(['success' => false, 'message' => 'Food log id is required.'], 422);
     }
 
-    $stmt = $pdo->prepare('DELETE FROM food_logs WHERE id = :id AND user_id = :user_id');
+    $stmt = $pdo->prepare('DELETE FROM app_food_logs WHERE id = :id AND user_id = :user_id');
     $stmt->execute([
         'id' => $entryId,
         'user_id' => $userId,

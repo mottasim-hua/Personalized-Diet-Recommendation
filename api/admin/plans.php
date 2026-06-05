@@ -10,7 +10,7 @@ $pdo = get_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt = $pdo->query(
-        'SELECT mp.id, mp.title, mp.plan_type, mp.calories, mp.duration_days, mp.assigned_by_role,
+        'SELECT mp.id, mp.user_id, mp.dietitian_id, mp.title, mp.plan_type, mp.calories, mp.duration_days, mp.notes, mp.assigned_by_role,
                 mp.assigned_at, mp.updated_at, u.name AS user_name, u.email AS user_email,
                 d.name AS dietitian_name
          FROM meal_plans mp
@@ -109,6 +109,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'message' => 'Plan assigned successfully.',
         'id' => (int) $pdo->lastInsertId(),
     ], 201);
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $data = get_request_data();
+    $planId = sanitize_int($data['id'] ?? get_query_param('id', 0), 0);
+
+    if ($planId <= 0) {
+        send_json(['success' => false, 'message' => 'Plan id is required.'], 422);
+    }
+
+    $stmt = $pdo->prepare('DELETE FROM meal_plans WHERE id = :id');
+    $stmt->execute(['id' => $planId]);
+
+    send_json([
+        'success' => true,
+        'message' => 'Plan deleted successfully.',
+    ]);
 }
 
 send_json(['success' => false, 'message' => 'Method not allowed'], 405);

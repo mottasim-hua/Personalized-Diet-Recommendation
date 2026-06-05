@@ -11,20 +11,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $pdo = get_db();
+$userPk = user_primary_key_column($pdo);
+$dietitianNameExpr = user_name_expression($pdo, 'u');
 $stmt = $pdo->prepare(
-    'SELECT mp.id, mp.title, mp.plan_type, mp.calories, mp.duration_days, mp.meals_json, mp.notes, mp.assigned_by_role,
-            mp.assigned_at, mp.updated_at, u.name AS dietitian_name
-     FROM meal_plans mp
-     LEFT JOIN users u ON u.id = mp.dietitian_id
-     WHERE mp.user_id = :user_id
+    "SELECT mp.id, mp.plan_name, mp.start_date, mp.end_date, mp.calorie_target, mp.day_count, mp.days_json,
+            mp.status, mp.created_at, mp.updated_at, $dietitianNameExpr AS dietitian_name
+     FROM app_dietitian_patients p
+     INNER JOIN app_meal_plans mp ON mp.patient_id = p.id
+     LEFT JOIN users u ON u.$userPk = mp.dietitian_user_id
+     WHERE p.client_user_id = :user_id
      ORDER BY mp.updated_at DESC
-     LIMIT 1'
+     LIMIT 1"
 );
 $stmt->execute(['user_id' => current_user_id()]);
 $plan = $stmt->fetch();
 
 if ($plan) {
-    $plan['meals'] = $plan['meals_json'] ? json_decode((string) $plan['meals_json'], true) : null;
+    $plan['days'] = $plan['days_json'] ? json_decode((string) $plan['days_json'], true) : [];
 }
 
 send_json([

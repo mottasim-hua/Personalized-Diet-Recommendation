@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $data = get_request_data();
+$email = strtolower(sanitize_string($data['email'] ?? ''));
 $password = (string) ($data['password'] ?? '');
 
 if ($email === '' || $password === '') {
@@ -78,6 +79,17 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 $pdo = get_db();
+$userPk = user_primary_key_column($pdo);
+$nameExpr = user_name_expression($pdo);
+$roleExpr = user_role_expression();
+
+$query = $pdo->prepare(
+    "SELECT $userPk AS id, $nameExpr AS name, email, password_hash, $roleExpr AS role
+     FROM users
+     WHERE email = :email
+     LIMIT 1"
+);
+$query->execute(['email' => $email]);
 $user = $query->fetch();
 
 if (!$user) {
@@ -96,21 +108,20 @@ if (!$isValid) {
 
 session_regenerate_id(true);
 $_SESSION['user_id'] = (int) $user['id'];
-$_SESSION['role'] = $user['role'];
+$_SESSION['role'] = normalize_user_role((string) $user['role']);
 $_SESSION['user_name'] = $user['name'];
 $_SESSION['user_email'] = $user['email'];
 
 send_json([
     'success' => true,
     'message' => 'Login successful.',
-    'role' => $user['role'],
+    'role' => normalize_user_role((string) $user['role']),
     'user_id' => (int) $user['id'],
     'user' => [
         'id' => (int) $user['id'],
         'name' => $user['name'],
         'email' => $user['email'],
-        'role' => $user['role'],
+        'role' => normalize_user_role((string) $user['role']),
         'loginTime' => date(DATE_ATOM),
     ],
 ]);
-finish_login_success($user);

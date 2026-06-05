@@ -10,19 +10,20 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
       rel="stylesheet"
+
     />
-    <link
+    <link 
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=20260509-3" />
   </head>
   <body>
     <div class="calorie-warning" id="calorieWarning">
       <div class="warning-content">
         <i class="fas fa-exclamation-triangle"></i>
-        <span>
+        <span id="calorieWarningText">
           Warning: You've exceeded your daily calorie limit! Consider reducing
           your intake.
         </span>
@@ -83,18 +84,20 @@
                 stroke-width="4"
               />
               <circle
+                id="miniCalorieRing"
                 cx="25"
                 cy="25"
                 r="20"
                 fill="none"
                 stroke="#40916C"
                 stroke-width="4"
-                stroke-dasharray="100"
-                stroke-dashoffset="30"
+                stroke-dasharray="125.66"
+                stroke-dashoffset="125.66"
                 transform="rotate(-90 25 25)"
               />
             </svg>
           </div>
+          <div class="calorie-widget-meta" id="miniCalorieLabel">0 / 2000 kcal</div>
         </div>
 
         <div class="sidebar-footer">
@@ -179,6 +182,169 @@
                 Use the sidebar to manage your health details, food log, meal
                 plan, and weekly reports separately.
               </p>
+            </div>
+
+            <div class="dashboard-insights">
+              <div class="card insight-card tracker-card">
+                <div class="card-header">
+                  <h3><i class="fas fa-fire"></i> Daily Calorie Goal</h3>
+                  <span class="status-badge on-track" id="calorieGoalStatus">
+                    On Track
+                  </span>
+                </div>
+                <div class="card-body">
+                  <div class="goal-input-row">
+                    <div class="tracker-input-group">
+                      <label for="homeCalorieGoal">Your daily goal</label>
+                      <input
+                        type="number"
+                        id="homeCalorieGoal"
+                        class="form-control"
+                        min="1"
+                        step="1"
+                        value="2000"
+                        placeholder="Set calorie goal"
+                      />
+                    </div>
+
+                    <div class="goal-summary">
+                      <span id="calorieGoalSummary">0 of 2000 kcal consumed</span>
+                    </div>
+                  </div>
+
+                  <div class="dashboard-progress">
+                    <div class="progress-track">
+                      <div class="progress-fill" id="calorieGoalFill"></div>
+                    </div>
+                    <div class="progress-meta">
+                      <span id="calorieCardPercent">0%</span>
+                      <span id="calorieGoalRemaining">2000 kcal remaining</span>
+                    </div>
+                  </div>
+
+                  <div id="inlineCalorieWarning" class="inline-warning-banner hidden">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="inlineCalorieWarningText">
+                      You've exceeded your daily calorie limit!
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card insight-card tracker-card">
+                <div class="card-header">
+                  <h3><i class="fas fa-droplet"></i> Water Intake</h3>
+                  <span class="status-badge on-track" id="waterStatusBadge">
+                    Stay Hydrated
+                  </span>
+                </div>
+                <div class="card-body">
+                  <div class="segmented-toggle" id="waterUnitToggle">
+                    <button
+                      type="button"
+                      class="toggle-btn active"
+                      id="waterUnitGlasses"
+                      onclick="setWaterUnit('glasses')"
+                    >
+                      Glasses
+                    </button>
+                    <button
+                      type="button"
+                      class="toggle-btn"
+                      id="waterUnitMl"
+                      onclick="setWaterUnit('ml')"
+                    >
+                      ml
+                    </button>
+                  </div>
+
+                  <div class="water-stats">
+                    <div>
+                      <div class="water-value" id="waterConsumedDisplay">0 glasses</div>
+                      <p class="text-muted" id="waterGoalDisplay">Goal: 8 glasses</p>
+                    </div>
+                    <span class="status-badge on-track" id="waterStatusBadgeInline">
+                      Stay Hydrated
+                    </span>
+                  </div>
+
+                  <div class="dashboard-progress">
+                    <div class="progress-track water-progress">
+                      <div class="progress-fill water-fill" id="waterProgressFill"></div>
+                    </div>
+                    <div class="progress-meta">
+                      <span id="waterCardPercent">0%</span>
+                      <span id="waterProgressMeta">0 of 8 glasses</span>
+                    </div>
+                  </div>
+
+                  <p class="water-message" id="waterMotivation">
+                    Stay hydrated! 💧
+                  </p>
+
+                  <div class="water-actions">
+                    <button
+                      type="button"
+                      class="btn btn-primary water-action-btn"
+                      id="waterQuickAddPrimary"
+                      onclick="quickAddWater()"
+                    >
+                      <i class="fas fa-plus"></i> +1 glass
+                    </button>
+                    <button
+                      type="button"
+                      class="btn water-secondary-btn"
+                      id="waterQuickAddSecondary"
+                      onclick="quickAddWater(250)"
+                    >
+                      <i class="fas fa-tint"></i> +250 ml
+                    </button>
+                  </div>
+
+                  <div class="form-row water-form-row">
+                    <div class="form-group">
+                      <label for="waterManualAmount">Manual water entry</label>
+                      <input
+                        type="number"
+                        id="waterManualAmount"
+                        class="form-control"
+                        min="0"
+                        step="0.1"
+                        placeholder="Enter amount"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="waterGoalInput">Daily water goal</label>
+                      <input
+                        type="number"
+                        id="waterGoalInput"
+                        class="form-control"
+                        min="1"
+                        step="1"
+                        value="8"
+                        placeholder="Set water goal"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="water-footer-actions">
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      onclick="addManualWater()"
+                    >
+                      <i class="fas fa-droplet"></i> Add Water
+                    </button>
+                    <button
+                      type="button"
+                      class="btn water-secondary-btn"
+                      onclick="resetWaterToday()"
+                    >
+                      <i class="fas fa-rotate-left"></i> Reset Today
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -301,14 +467,23 @@
             <div class="card">
               <div class="card-header">
                 <h3><i class="fas fa-utensils"></i> Food Tracker</h3>
-                <div class="search-box">
-                  <i class="fas fa-search"></i>
-                  <input
-                    type="text"
-                    id="foodSearch"
-                    placeholder="Search food log..."
-                    oninput="searchFood()"
-                  />
+                <div class="food-header-actions">
+                  <button
+                    type="button"
+                    class="btn water-secondary-btn"
+                    onclick="resetTodayFoodLog()"
+                  >
+                    <i class="fas fa-rotate-left"></i> Reset Today
+                  </button>
+                  <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input
+                      type="text"
+                      id="foodSearch"
+                      placeholder="Search food log..."
+                      oninput="searchFood()"
+                    />
+                  </div>
                 </div>
               </div>
               <div class="card-body">
@@ -541,8 +716,8 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="js/auth.js"></script>
-    <script src="js/charts.js"></script>
-    <script src="js/user.js"></script>
+    <script src="js/auth.js?v=20260509-3"></script>
+    <script src="js/charts.js?v=20260509-3"></script>
+    <script src="js/user.js?v=20260509-3"></script>
   </body>
 </html>
