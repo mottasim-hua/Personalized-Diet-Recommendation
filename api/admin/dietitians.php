@@ -9,13 +9,25 @@ require_role('admin');
 $pdo = get_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $patientTable = table_exists($pdo, 'dietitian_patients') ? 'dietitian_patients' : (table_exists($pdo, 'app_dietitian_patients') ? 'app_dietitian_patients' : null);
+    $patientJoin = '';
+    $patientCount = '0 AS patients';
+
+    if ($patientTable === 'dietitian_patients') {
+        $patientJoin = 'LEFT JOIN dietitian_patients dp ON dp.dietitian_id = u.id';
+        $patientCount = 'COUNT(dp.user_id) AS patients';
+    } elseif ($patientTable === 'app_dietitian_patients') {
+        $patientJoin = 'LEFT JOIN app_dietitian_patients dp ON dp.dietitian_user_id = u.id';
+        $patientCount = 'COUNT(dp.client_user_id) AS patients';
+    }
+
     $stmt = $pdo->query(
-        'SELECT u.id, u.name, u.email, u.created_at, COUNT(dp.user_id) AS patients
+        "SELECT u.id, u.name, u.email, u.created_at, {$patientCount}
          FROM users u
-         LEFT JOIN dietitian_patients dp ON dp.dietitian_id = u.id
-         WHERE u.role = "dietitian"
+         {$patientJoin}
+         WHERE LOWER(u.role) = 'dietitian'
          GROUP BY u.id, u.name, u.email, u.created_at
-         ORDER BY u.created_at DESC'
+         ORDER BY u.created_at DESC"
     );
 
     send_json([
@@ -36,24 +48,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         send_json(['success' => false, 'message' => 'name and email are required.'], 422);
     }
 
+    $userPk = user_primary_key_column($pdo);
+    $duplicateSql = "SELECT {$userPk} AS id FROM users WHERE LOWER(email) = :email";
+    $duplicateParams = ['email' => $email];
+
     if ($id > 0) {
-        $params = [
-            'id' => $id,
-            'name' => $name,
-            'email' => $email,
-        ];
+        $duplicateSql .= " AND {$userPk} <> :id";
+        $duplicateParams['id'] = $id;
+    }
 
-        $sql = 'UPDATE users SET name = :name, email = :email';
+    $duplicateSql .= ' LIMIT 1';
+    $duplicateStmt = $pdo->prepare($duplicateSql);
+    $duplicateStmt->execute($duplicateParams);
 
-        if ($password !== '') {
-            $sql .= ', password_hash = :password_hash';
-            $params['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+    if ($duplicateStmt->fetch()) {
+        send_json(['success' => false, 'message' => 'Email already exists'], 409);
+    }
+
+    if ($id > 0) {
+        try {
+            $pdo->beginTransaction();
+
+            $params = [
+                'id' => $id,
+                'name' => $name,
+                'email' => $email,
+            ];
+
+            $sql = "UPDATE users SET name = :name, email = :email";
+
+            if ($password !== '') {
+                $sql .= ', password_hash = :password_hash';
+                $params['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+            }
+
+            $sql .= " WHERE {$userPk} = :id AND LOWER(role) = 'dietitian'";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $pdo->commit();
+        } catch (PDOException $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if ((int) ($exception->errorInfo[1] ?? 0) === 1062) {
+                send_json(['success' => false, 'message' => 'Email already exists'], 409);
+            }
+            throw $exception;
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            send_json(['success' => false, 'message' => 'Unable to update dietitian right now.'], 500);
         }
-
-        $sql .= ' WHERE id = :id AND role = "dietitian"';
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
 
         send_json([
             'success' => true,
@@ -61,15 +108,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
     }
 
-    $stmt = $pdo->prepare(
-        'INSERT INTO users (name, email, password_hash, role)
-         VALUES (:name, :email, :password_hash, "dietitian")'
-    );
-    $stmt->execute([
-        'name' => $name,
-        'email' => $email,
-        'password_hash' => password_hash($password !== '' ? $password : 'ChangeMe123!', PASSWORD_DEFAULT),
-    ]);
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO users (name, email, password_hash, role)
+             VALUES (:name, :email, :password_hash, "dietitian")'
+        );
+        $stmt->execute([
+            'name' => $name,
+            'email' => $email,
+            'password_hash' => password_hash($password !== '' ? $password : 'ChangeMe123!', PASSWORD_DEFAULT),
+        ]);
+        $pdo->commit();
+    } catch (PDOException $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        if ((int) ($exception->errorInfo[1] ?? 0) === 1062) {
+            send_json(['success' => false, 'message' => 'Email already exists'], 409);
+        }
+        throw $exception;
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        send_json(['success' => false, 'message' => 'Unable to create dietitian right now.'], 500);
+    }
 
     send_json([
         'success' => true,
@@ -86,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         send_json(['success' => false, 'message' => 'Dietitian id is required.'], 422);
     }
 
-    $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id AND role = "dietitian"');
+    $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id AND LOWER(role) = \'dietitian\'');
     $stmt->execute(['id' => $id]);
 
     send_json([

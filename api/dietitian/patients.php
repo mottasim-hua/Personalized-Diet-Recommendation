@@ -77,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'success' => true,
             'message' => 'Patient updated successfully.',
         ]);
+        return;
     }
 
     $stmt = $pdo->prepare(

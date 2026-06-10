@@ -1,81 +1,40 @@
-const isServerMode = window.location.protocol !== 'file:';
-
-let assignedUsers = [
-  {
-    id: 1,
-    name: 'Aisha Rahman',
-    age: 29,
-    weight: 68,
-    height: 165,
-    goal: 'Weight Loss',
-    dietType: 'Balanced',
-    allergies: 'Shellfish',
-    status: 'Active',
-    createdAt: '2026-05-09T08:30:00Z'
-  },
-  {
-    id: 2,
-    name: 'Nabil Chowdhury',
-    age: 34,
-    weight: 77,
-    height: 178,
-    goal: 'Muscle Gain',
-    dietType: 'High Protein',
-    allergies: 'None',
-    status: 'Active',
-    createdAt: '2026-05-08T09:15:00Z'
-  },
-  {
-    id: 3,
-    name: 'Farzana Islam',
-    age: 42,
-    weight: 71,
-    height: 160,
-    goal: 'Diabetes Control',
-    dietType: 'Low Carb',
-    allergies: 'Mango',
-    status: 'Inactive',
-    createdAt: '2026-05-07T13:00:00Z'
-  },
-  {
-    id: 4,
-    name: 'Omar Hossain',
-    age: 31,
-    weight: 82,
-    height: 181,
-    goal: 'Maintenance',
-    dietType: 'Vegetarian',
-    allergies: 'Peanuts',
-    status: 'Active',
-    createdAt: '2026-05-06T10:45:00Z'
+const isServerMode = true;
+function getLocalProjectBaseCandidates() {
+  if (window.location.protocol !== 'file:') {
+    return [];
   }
-];
 
-let mealPlans = [
-  {
-    id: 1,
-    userId: 1,
-    planName: 'Metabolic Reset Week',
-    startDate: '2026-05-11',
-    endDate: '2026-05-17',
-    calorieTarget: 1800,
-    status: 'Active',
-    createdAt: '2026-05-10T09:00:00Z',
-    days: [{ day: 1, meals: { Breakfast: [{ item: 'Greek yogurt bowl', portion: '1 bowl', calories: 320, notes: 'Add berries and chia' }], Lunch: [{ item: 'Grilled chicken salad', portion: '1 plate', calories: 430, notes: 'Light olive dressing' }], Dinner: [{ item: 'Baked fish and vegetables', portion: '220 g', calories: 470, notes: 'Steam vegetables lightly' }], Snacks: [{ item: 'Apple and almonds', portion: '1 serving', calories: 180, notes: 'Mid-afternoon snack' }] } }]
-  }
-];
+  const path = decodeURIComponent(window.location.pathname || '');
+  const segments = path.split('/').filter(Boolean);
+  const projectFolder = segments.length >= 2 ? segments[segments.length - 2] : '';
 
-let feedbackEntries = [
-  {
-    id: 1,
-    userId: 1,
-    planId: 1,
-    message: 'Plan assigned. Monitor hunger cues and hydration during the first 3 days.',
-    response: '',
-    status: 'Pending',
-    createdAt: '2026-05-10T09:15:00Z'
+  if (!projectFolder) {
+    return [];
   }
-];
+
+  return [
+    `http://localhost/${projectFolder}/`,
+    `http://127.0.0.1/${projectFolder}/`,
+  ];
+}
+
+const API_BASE_URL = (() => {
+  const override = window.DIET_SYSTEM_API_BASE_URL || localStorage.getItem('dietSystemApiBaseUrl');
+  const scriptBase = document.currentScript?.src && !document.currentScript.src.startsWith('file:')
+    ? new URL('../', document.currentScript.src).toString()
+    : null;
+  if (override && !String(override).startsWith('file:')) return override;
+  if (scriptBase) return scriptBase;
+  if (window.location.protocol !== 'file:') return new URL('./', window.location.href).toString();
+  const localProjectBase = getLocalProjectBaseCandidates()[0];
+  if (localProjectBase) return localProjectBase;
+  return 'http://localhost:8000/';
+})();
+
+let assignedUsers = [];
+let mealPlans = [];
+let feedbackEntries = [];
+let currentSessionUser = null;
 
 let editingUserId = null;
 let editingPlanId = null;
@@ -89,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 async function initializeDietitianDashboard() {
+  await ensureServerSession();
   loadDietitianData();
   bindDietitianEvents();
   resetMealPlanForm();
@@ -97,9 +57,13 @@ async function initializeDietitianDashboard() {
 }
 
 function loadDietitianData() {
-  const user = getCurrentUser();
-  const fallbackUser = { name: 'Dr. Sarah Martinez', role: 'dietitian' };
-  const dietitian = user || fallbackUser;
+  const user = currentSessionUser || getCurrentUser();
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  const dietitian = user;
 
   [document.getElementById('dietitianName'), document.getElementById('heroDietitianName')].forEach(el => {
     if (el) el.textContent = dietitian.name;
@@ -116,6 +80,36 @@ function loadDietitianData() {
       day: 'numeric',
       year: 'numeric'
     })}. Stay on top of care plans, user updates, and pending reviews.`;
+  }
+}
+
+async function ensureServerSession() {
+  try {
+    const status = await apiRequest('api/auth/status.php');
+    const sessionUser = status?.data || {};
+
+    if (!sessionUser.authenticated || sessionUser.role !== 'dietitian') {
+      localStorage.removeItem('dietSystemUser');
+      currentSessionUser = null;
+      window.location.href = 'index.html';
+      return;
+    }
+
+    currentSessionUser = {
+      id: sessionUser.user_id,
+      name: sessionUser.name,
+      email: sessionUser.email,
+      role: sessionUser.role
+    };
+
+    localStorage.setItem('dietSystemUser', JSON.stringify({
+      ...currentSessionUser,
+      loginTime: new Date().toISOString()
+    }));
+  } catch (error) {
+    localStorage.removeItem('dietSystemUser');
+    currentSessionUser = null;
+    window.location.href = 'index.html';
   }
 }
 
@@ -147,8 +141,6 @@ function bindDietitianEvents() {
 }
 
 async function loadDietitianDataStore() {
-  if (!isServerMode) return;
-
   try {
     const [patientsRes, plansRes, feedbackRes] = await Promise.all([
       apiRequest('api/dietitian/patients.php'),
@@ -160,7 +152,11 @@ async function loadDietitianDataStore() {
     mealPlans = (plansRes.data || []).map(mapPlanFromApi);
     feedbackEntries = (feedbackRes.data || []).map(mapFeedbackFromApi);
   } catch (error) {
-    showToast('Server data could not be loaded, so demo session data is being used.', 'error');
+    assignedUsers = [];
+    mealPlans = [];
+    feedbackEntries = [];
+    refreshDietitianUI();
+    showToast(error.message || 'Server data could not be loaded.', 'error');
   }
 }
 
@@ -790,15 +786,20 @@ function setButtonLoading(button, isLoading, label) {
 }
 
 async function apiRequest(url, options = {}) {
-  const response = await fetch(url, {
+  const requestOptions = {
     method: options.method || 'GET',
-    credentials: 'same-origin',
+    credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
       'Accept': 'application/json'
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
+    }
+  };
+
+  if (options.body !== undefined) {
+    requestOptions.headers['Content-Type'] = 'application/json';
+    requestOptions.body = JSON.stringify(options.body);
+  }
+
+  const response = await fetch(new URL(String(url || '').replace(/^\/+/, ''), API_BASE_URL).toString(), requestOptions);
 
   const text = await response.text();
   let payload = {};

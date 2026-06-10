@@ -3,688 +3,532 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard - HealthyLife</title>
-
+    <title>Admin Dashboard | Personalized Diet Recommendation System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
+    <link rel="stylesheet" href="css/admin-dashboard.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/styles.css" />
   </head>
-  <body class="admin-layout admin-layout-modern">
-    <div class="admin-shell">
-      <aside class="admin-sidebar" id="sidebar">
-        <div class="admin-sidebar__brand">
-          <div class="admin-brand-mark">
-            <i class="fas fa-leaf"></i>
-          </div>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar__brand">
+          <div class="brand-mark"><i class="fa-solid fa-leaf"></i></div>
           <div>
-            <h1>HealthyLife</h1>
-            <p>Diet System Admin</p>
+            <h1>Diet System</h1>
+            <p>Admin Console</p>
           </div>
         </div>
 
-        <div class="admin-sidebar__profile">
-          <div class="admin-avatar" id="adminAvatar">A</div>
-          <div>
-            <h3 id="adminName">Admin User</h3>
-            <p>Administrator</p>
-          </div>
-        </div>
-
-        <nav class="admin-nav">
-          <button class="admin-nav__item active" data-section="home">
-            <i class="fas fa-house"></i>
-            <span>Home</span>
+        <nav class="sidebar__nav">
+          <button class="nav-item active" data-section="dashboard">
+            <i class="fa-solid fa-house"></i><span>Dashboard</span>
           </button>
-          <button class="admin-nav__item" data-section="manage-users">
-            <i class="fas fa-users"></i>
-            <span>Manage Users</span>
+          <button class="nav-item" data-section="users">
+            <i class="fa-solid fa-users"></i><span>Manage Users</span>
           </button>
-          <button class="admin-nav__item" data-section="manage-dietitians">
-            <i class="fas fa-user-nurse"></i>
-            <span>Manage Dietitians</span>
+          <button class="nav-item" data-section="dietitians">
+            <i class="fa-solid fa-user-doctor"></i><span>Manage Dietitians</span>
           </button>
-          <button class="admin-nav__item" data-section="manage-plans">
-            <i class="fas fa-clipboard-list"></i>
-            <span>Manage Plans</span>
+          <button class="nav-item" data-section="plans">
+            <i class="fa-solid fa-clipboard-list"></i><span>Manage Plans</span>
           </button>
-          <button class="admin-nav__item" data-section="reports">
-            <i class="fas fa-chart-line"></i>
-            <span>Reports</span>
+          <button class="nav-item" data-section="reports">
+            <i class="fa-solid fa-chart-line"></i><span>Reports & Analytics</span>
+          </button>
+          <button class="nav-item" data-section="settings">
+            <i class="fa-solid fa-gear"></i><span>Settings</span>
           </button>
         </nav>
 
-        <div class="admin-sidebar__footer">
-          <div class="admin-health-card">
-            <div class="admin-health-card__label">Platform Health</div>
-            <div class="admin-health-card__value">99.2% uptime</div>
-            <div class="admin-health-card__bar">
-              <span></span>
+        <div class="sidebar__footer">
+          <div class="admin-badge">
+            <div class="admin-badge__avatar" id="sidebarAvatar">A</div>
+            <div>
+              <strong id="sidebarAdminName">Admin User</strong>
+              <span>Super Admin</span>
             </div>
-            <p>Updated 5 minutes ago</p>
           </div>
-
-          <button class="logout-btn" onclick="handleLogout()">
-            <i class="fas fa-sign-out-alt"></i>
+          <button class="logout-btn" id="logoutBtn">
+            <i class="fa-solid fa-right-from-bracket"></i>
             Logout
           </button>
         </div>
       </aside>
 
-      <div class="admin-main">
-        <header class="admin-topbar">
-          <div class="admin-topbar__left">
-            <button class="admin-icon-btn mobile-only" onclick="toggleSidebar()">
-              <i class="fas fa-bars"></i>
+      <div class="content-shell">
+        <header class="topbar">
+          <div class="topbar__left">
+            <button class="icon-btn mobile-only" id="sidebarToggle">
+              <i class="fa-solid fa-bars"></i>
             </button>
-
-            <div class="admin-page-intro">
-              <span class="admin-eyebrow">Diet System Control Center</span>
-              <h2 id="pageTitle">Home</h2>
-              <p id="pageSubtitle">Monitor platform performance and operations.</p>
+            <div>
+              <p class="eyebrow">Personalized Diet Recommendation System</p>
+              <h2 id="pageTitle">Good morning, Admin 👋</h2>
+              <p id="pageSubtitle">Dashboard overview for the control center.</p>
             </div>
           </div>
-
-          <div class="admin-topbar__right">
-            <label class="admin-search">
-              <i class="fas fa-search"></i>
-              <input
-                type="text"
-                id="globalSearch"
-                placeholder="Search users, dietitians, plans"
-              />
-            </label>
-
-            <button class="admin-icon-btn" id="themeToggle" title="Toggle theme">
-              <i class="fas fa-moon"></i>
+          <div class="topbar__right">
+            <div class="topbar-date" id="todayDate"></div>
+            <button class="icon-btn" id="refreshBtn" title="Refresh data">
+              <i class="fa-solid fa-rotate"></i>
             </button>
-
-            <div class="admin-dropdown-wrap">
-              <button class="admin-icon-btn admin-icon-btn--badge" id="notificationsToggle">
-                <i class="fas fa-bell"></i>
-                <span>3</span>
-              </button>
-              <div class="admin-dropdown" id="notificationsMenu">
-                <div class="admin-dropdown__header">
-                  <h4>Notifications</h4>
-                  <small>3 new</small>
-                </div>
-                <div class="admin-dropdown__list">
-                  <div class="admin-dropdown__item">
-                    <strong>New user registration</strong>
-                    <span>5 min ago</span>
-                  </div>
-                  <div class="admin-dropdown__item">
-                    <strong>Dietitian awaiting approval</strong>
-                    <span>18 min ago</span>
-                  </div>
-                  <div class="admin-dropdown__item">
-                    <strong>Monthly report generated</strong>
-                    <span>1 hour ago</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="admin-dropdown-wrap">
-              <button class="admin-profile-btn" id="profileToggle">
-                <div class="admin-profile-btn__avatar" id="topbarAvatar">A</div>
-                <div>
-                  <strong id="topbarName">Admin</strong>
-                  <span>Super Admin</span>
-                </div>
-              </button>
-              <div class="admin-dropdown admin-dropdown--profile" id="profileMenu">
-                <button><i class="fas fa-user"></i> Profile</button>
-                <button><i class="fas fa-gear"></i> Settings</button>
-                <button onclick="handleLogout()"><i class="fas fa-right-from-bracket"></i> Logout</button>
-              </div>
-            </div>
           </div>
         </header>
 
-        <main class="admin-content">
-          <section class="dashboard-section" id="homeSection">
-            <div class="admin-hero-card">
-              <div class="admin-hero-card__content">
-                <span class="admin-chip">Operations Overview</span>
-                <h1>Build healthier member journeys with better visibility.</h1>
-                <p id="currentDate">System overview and management</p>
-                <div class="admin-hero-card__stats">
-                  <div>
-                    <strong>91.4%</strong>
-                    <span>Retention Rate</span>
-                  </div>
-                  <div>
-                    <strong>7</strong>
-                    <span>Pending Approvals</span>
-                  </div>
-                </div>
-              </div>
-              <div class="admin-hero-card__aside">
-                <div class="hero-mini-card">
-                  <i class="fas fa-sparkles"></i>
-                  <strong>+18.6%</strong>
-                  <span>Weekly Growth</span>
-                </div>
-                <div class="hero-mini-card">
-                  <i class="fas fa-badge-check"></i>
-                  <strong>74%</strong>
-                  <span>Plan Completion</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="admin-stats-grid">
-              <article class="admin-stat-card">
-                <div class="admin-stat-card__icon green">
-                  <i class="fas fa-users"></i>
-                </div>
-                <div>
-                  <h4 id="totalUsers">0</h4>
-                  <p>Total Users</p>
-                </div>
-              </article>
-              <article class="admin-stat-card">
-                <div class="admin-stat-card__icon blue">
-                  <i class="fas fa-user-nurse"></i>
-                </div>
-                <div>
-                  <h4 id="totalDietitians">0</h4>
-                  <p>Total Dietitians</p>
-                </div>
-              </article>
-              <article class="admin-stat-card">
-                <div class="admin-stat-card__icon teal">
-                  <i class="fas fa-clipboard-list"></i>
-                </div>
-                <div>
-                  <h4 id="totalPlans">0</h4>
-                  <p>Active Plans</p>
-                </div>
-              </article>
-              <article class="admin-stat-card">
-                <div class="admin-stat-card__icon amber">
-                  <i class="fas fa-chart-column"></i>
-                </div>
-                <div>
-                  <h4 id="monthlyReports">0</h4>
-                  <p>Monthly Reports</p>
-                </div>
-              </article>
-            </div>
-
-            <div class="admin-grid-2">
-              <section class="admin-panel admin-panel--chart">
-                <div class="admin-panel__header">
-                  <div>
-                    <h3>User Growth</h3>
-                    <p>Monthly growth and subscriptions analytics</p>
-                  </div>
-                  <button class="admin-soft-btn">Last 7 Months</button>
-                </div>
-                <div class="chart-box">
-                  <canvas id="activityChart"></canvas>
-                </div>
-              </section>
-
-              <section class="admin-panel admin-panel--chart">
-                <div class="admin-panel__header">
-                  <div>
-                    <h3>Report Status</h3>
-                    <p>Completion distribution across the platform</p>
-                  </div>
-                </div>
-                <div class="chart-box chart-box--small">
-                  <canvas id="roleDistributionChart"></canvas>
-                </div>
-              </section>
-            </div>
-
-            <div class="admin-grid-2">
-              <section class="admin-panel">
-                <div class="admin-panel__header">
-                  <div>
-                    <h3>Recent Activities</h3>
-                    <p>Latest actions across users, plans, and care teams</p>
-                  </div>
-                </div>
-                <div class="activity-list" id="recentActivities"></div>
-              </section>
-
-              <section class="admin-panel">
-                <div class="admin-panel__header">
-                  <div>
-                    <h3>Recent Users</h3>
-                    <p>Latest registrations in the system</p>
-                  </div>
-                </div>
-                <div class="table-wrap">
-                  <table class="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody id="homeUsersTableBody"></tbody>
-                  </table>
-                </div>
-              </section>
-            </div>
-          </section>
-
-          <section class="dashboard-section hidden" id="manage-usersSection">
-            <div class="admin-section-head">
+        <main class="main-content">
+          <section class="page-section active" id="section-dashboard">
+            <div class="hero-card">
               <div>
-                <span class="admin-chip admin-chip--light">User Management</span>
-                <h3>Manage Users</h3>
-                <p>Search, filter, update, and review member subscriptions.</p>
+                <span class="chip">Operations Overview</span>
+                <h3>Track users, dietitians, plans, and alerts from one place.</h3>
+                <p id="heroLine">Pulling live data from the admin APIs.</p>
               </div>
-              <button class="btn btn-primary" onclick="openUserModal()">
-                <i class="fas fa-plus"></i>
-                Add User
-              </button>
+              <div class="hero-card__stats">
+                <div><strong id="heroUsers">0</strong><span>Users</span></div>
+                <div><strong id="heroPlans">0</strong><span>Plans</span></div>
+                <div><strong id="heroAlerts">0</strong><span>Alerts today</span></div>
+              </div>
             </div>
 
-            <div class="admin-toolbar">
-              <label class="admin-search">
-                <i class="fas fa-search"></i>
-                <input type="text" id="usersSearch" placeholder="Search users" />
-              </label>
-              <select id="usersFilter" class="admin-select">
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+            <div class="stat-grid" id="dashboardStats"></div>
+
+            <div class="grid-2">
+              <article class="panel">
+                <div class="panel__head">
+                  <div>
+                    <h3>User Distribution by Goal</h3>
+                    <p>Weight loss, muscle gain, maintenance, and other goals.</p>
+                  </div>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="goalChart"></canvas>
+                </div>
+              </article>
+              <article class="panel">
+                <div class="panel__head">
+                  <div>
+                    <h3>Weekly New Registrations</h3>
+                    <p>Last 7 days registration trend.</p>
+                  </div>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="weeklyChart"></canvas>
+                </div>
+              </article>
             </div>
 
-            <section class="admin-panel">
+            <article class="panel">
+              <div class="panel__head">
+                <div>
+                  <h3>Recent Activity</h3>
+                  <p>Last 10 user registrations.</p>
+                </div>
+              </div>
               <div class="table-wrap">
-                <table class="admin-table">
+                <table class="table" id="recentUsersTable">
                   <thead>
                     <tr>
                       <th>Name</th>
                       <th>Email</th>
-                      <th>Phone</th>
-                      <th>Subscription Status</th>
-                      <th>Actions</th>
+                      <th>Role</th>
+                      <th>Joined</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
-                  <tbody id="usersTableBody"></tbody>
+                  <tbody></tbody>
                 </table>
               </div>
-              <div class="admin-empty hidden" id="usersEmpty">
-                <i class="fas fa-users"></i>
-                <h4>No users found</h4>
-                <p>Try adjusting your search or add a new user.</p>
-              </div>
-            </section>
+            </article>
           </section>
 
-          <section class="dashboard-section hidden" id="manage-dietitiansSection">
-            <div class="admin-section-head">
+          <section class="page-section" id="section-users">
+            <div class="section-head">
               <div>
-                <span class="admin-chip admin-chip--light">Dietitian Management</span>
-                <h3>Manage Dietitians</h3>
-                <p>Review qualifications, specialization, approval state, and availability.</p>
+                <h3>User Management</h3>
+                <p>Create, edit, assign, and monitor user accounts.</p>
               </div>
-              <button class="btn btn-primary" onclick="openDietitianModal()">
-                <i class="fas fa-plus"></i>
-                Add Dietitian
+              <button class="primary-btn" id="addUserBtn">
+                <i class="fa-solid fa-user-plus"></i> Add New User
               </button>
             </div>
 
-            <div class="admin-toolbar">
-              <label class="admin-search">
-                <i class="fas fa-search"></i>
-                <input type="text" id="dietitiansSearch" placeholder="Search dietitians" />
-              </label>
-              <select id="dietitiansFilter" class="admin-select">
+            <div class="toolbar">
+              <input id="userSearch" type="search" class="field" placeholder="Search by name or email" />
+              <select id="userStatusFilter" class="field">
                 <option value="all">All Status</option>
-                <option value="approved">Approved</option>
-                <option value="pending">Pending</option>
-                <option value="available">Available</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
+              <select id="userGoalFilter" class="field">
+                <option value="all">All Goals</option>
+                <option value="weight loss">Weight Loss</option>
+                <option value="muscle gain">Muscle Gain</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="other">Other</option>
+              </select>
+              <button class="ghost-btn" id="exportUsersBtn"><i class="fa-solid fa-download"></i> Export CSV</button>
             </div>
 
-            <section class="admin-panel">
+            <article class="panel">
               <div class="table-wrap">
-                <table class="admin-table">
+                <table class="table" id="usersTable">
                   <thead>
                     <tr>
-                      <th>Dietitian</th>
-                      <th>Qualification</th>
-                      <th>Specialization</th>
-                      <th>Availability</th>
+                      <th>#</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>BMI</th>
+                      <th>Health Goal</th>
+                      <th>Calorie Limit</th>
+                      <th>Dietary Pref</th>
+                      <th>Joined</th>
+                      <th>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
-                  <tbody id="dietitiansTableBody"></tbody>
+                  <tbody></tbody>
                 </table>
               </div>
-              <div class="admin-empty hidden" id="dietitiansEmpty">
-                <i class="fas fa-user-nurse"></i>
-                <h4>No dietitians found</h4>
-                <p>Add a dietitian or change your current filters.</p>
-              </div>
-            </section>
+              <div class="pagination" id="usersPagination"></div>
+            </article>
           </section>
 
-          <section class="dashboard-section hidden" id="manage-plansSection">
-            <div class="admin-section-head">
+          <section class="page-section" id="section-dietitians">
+            <div class="section-head">
               <div>
-                <span class="admin-chip admin-chip--light">Plan Management</span>
-                <h3>Manage Plans</h3>
-                <p>Create, categorize, and monitor professional diet plans.</p>
+                <h3>Dietitian Management</h3>
+                <p>Manage clinicians and their workload.</p>
               </div>
-              <button class="btn btn-primary" onclick="openPlanModal()">
-                <i class="fas fa-plus"></i>
-                Create Plan
+              <button class="primary-btn" id="addDietitianBtn">
+                <i class="fa-solid fa-user-plus"></i> Add Dietitian
               </button>
             </div>
 
-            <div class="plan-cards-grid" id="planCategoryCards"></div>
-
-            <div class="admin-toolbar">
-              <label class="admin-search">
-                <i class="fas fa-search"></i>
-                <input type="text" id="plansSearch" placeholder="Search plans" />
-              </label>
-              <select id="plansFilter" class="admin-select">
-                <option value="all">All Categories</option>
-                <option value="weight-loss">Weight Loss</option>
-                <option value="muscle-gain">Muscle Gain</option>
-                <option value="maintenance">Maintenance</option>
-                <option value="clinical">Clinical</option>
-              </select>
+            <div class="toolbar">
+              <input id="dietitianSearch" type="search" class="field" placeholder="Search dietitians" />
+              <button class="ghost-btn" id="exportDietitiansBtn"><i class="fa-solid fa-download"></i> Export CSV</button>
             </div>
 
-            <section class="admin-panel">
+            <article class="panel">
               <div class="table-wrap">
-                <table class="admin-table">
+                <table class="table" id="dietitiansTable">
                   <thead>
                     <tr>
-                      <th>Plan</th>
-                      <th>Category</th>
-                      <th>Calories</th>
-                      <th>Duration</th>
-                      <th>Pricing</th>
+                      <th>#</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Assigned Patients</th>
+                      <th>Plans Created</th>
+                      <th>Feedback Given</th>
+                      <th>Joined</th>
+                      <th>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
-                  <tbody id="plansTableBody"></tbody>
+                  <tbody></tbody>
                 </table>
               </div>
-              <div class="admin-empty hidden" id="plansEmpty">
-                <i class="fas fa-clipboard-list"></i>
-                <h4>No plans found</h4>
-                <p>Create a new diet plan to populate this section.</p>
-              </div>
-            </section>
+              <div class="pagination" id="dietitiansPagination"></div>
+            </article>
           </section>
 
-          <section class="dashboard-section hidden" id="reportsSection">
-            <div class="admin-section-head">
+          <section class="page-section" id="section-plans">
+            <div class="section-head">
               <div>
-                <span class="admin-chip admin-chip--light">Reports & Analytics</span>
-                <h3>Reports</h3>
-                <p>Review growth, subscriptions, and revenue performance.</p>
+                <h3>Diet Plans</h3>
+                <p>Track assigned meal plans and reassign dietitians.</p>
               </div>
-              <div class="admin-actions-inline">
-                <select id="reportsRange" class="admin-select">
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly" selected>Monthly</option>
-                </select>
-                <button class="btn btn-primary" onclick="downloadReport()">
-                  <i class="fas fa-download"></i>
-                  Download Report
-                </button>
+              <button class="primary-btn" id="createPlanBtn">
+                <i class="fa-solid fa-plus"></i> Create Plan
+              </button>
+            </div>
+
+            <div class="alert-box" id="unassignedAlert" hidden></div>
+
+            <div class="toolbar">
+              <input id="planSearch" type="search" class="field" placeholder="Search by user name" />
+              <select id="planStatusFilter" class="field">
+                <option value="all">All Plans</option>
+                <option value="active">Active</option>
+                <option value="unassigned">No Plan Assigned</option>
+              </select>
+              <select id="planDietitianFilter" class="field">
+                <option value="all">All Dietitians</option>
+              </select>
+              <button class="ghost-btn" id="exportPlansBtn"><i class="fa-solid fa-download"></i> Export CSV</button>
+            </div>
+
+            <article class="panel">
+              <div class="table-wrap">
+                <table class="table" id="plansTable">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>User Name</th>
+                      <th>Health Goal</th>
+                      <th>Assigned Dietitian</th>
+                      <th>Plan Created Date</th>
+                      <th>Calorie Target</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="pagination" id="plansPagination"></div>
+            </article>
+          </section>
+
+          <section class="page-section" id="section-reports">
+            <div class="section-head">
+              <div>
+                <h3>Reports & Analytics</h3>
+                <p>Operational health and user nutrition trends.</p>
+              </div>
+              <select id="reportRange" class="field">
+                <option value="7">Last 7 Days</option>
+                <option value="30" selected>Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+              </select>
+            </div>
+
+            <div class="stat-grid stat-grid--sm" id="reportsStats"></div>
+
+            <div class="grid-2">
+              <article class="panel">
+                <div class="panel__head"><h3>New Registrations</h3></div>
+                <div class="chart-wrap"><canvas id="registrationsChart"></canvas></div>
+              </article>
+              <article class="panel">
+                <div class="panel__head"><h3>Daily Calorie Alerts</h3></div>
+                <div class="chart-wrap"><canvas id="alertsChart"></canvas></div>
+              </article>
+              <article class="panel">
+                <div class="panel__head"><h3>User Dietary Preferences</h3></div>
+                <div class="chart-wrap"><canvas id="prefsChart"></canvas></div>
+              </article>
+              <article class="panel">
+                <div class="panel__head"><h3>Top Dietitians</h3></div>
+                <div class="chart-wrap"><canvas id="dietitianActivityChart"></canvas></div>
+              </article>
+            </div>
+
+            <article class="panel">
+              <div class="panel__head">
+                <div>
+                  <h3>Calorie Alert Log</h3>
+                  <p>Users who exceeded their calorie limits.</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="table" id="alertTable">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Date</th>
+                      <th>Calories</th>
+                      <th>Limit</th>
+                      <th>Exceeded By</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </article>
+
+            <div class="button-row">
+              <button class="ghost-btn" id="exportFullReportBtn"><i class="fa-solid fa-file-export"></i> Export Full Report</button>
+              <button class="ghost-btn" id="exportReportUsersBtn"><i class="fa-solid fa-user-group"></i> Export Users CSV</button>
+              <button class="ghost-btn" id="exportReportPlansBtn"><i class="fa-solid fa-clipboard-list"></i> Export Plans CSV</button>
+            </div>
+          </section>
+
+          <section class="page-section" id="section-settings">
+            <div class="section-head">
+              <div>
+                <h3>Settings</h3>
+                <p>System, profile, and notifications.</p>
               </div>
             </div>
-
-            <div class="admin-stats-grid admin-stats-grid--reports">
-              <article class="admin-stat-card">
-                <div class="admin-stat-card__icon green">
-                  <i class="fas fa-dollar-sign"></i>
-                </div>
-                <div>
-                  <h4>$45.2K</h4>
-                  <p>Revenue</p>
-                </div>
-              </article>
-              <article class="admin-stat-card">
-                <div class="admin-stat-card__icon teal">
-                  <i class="fas fa-repeat"></i>
-                </div>
-                <div>
-                  <h4>1,250</h4>
-                  <p>Subscriptions</p>
-                </div>
-              </article>
-              <article class="admin-stat-card">
-                <div class="admin-stat-card__icon blue">
-                  <i class="fas fa-user-plus"></i>
-                </div>
-                <div>
-                  <h4>340</h4>
-                  <p>New Registrations</p>
-                </div>
-              </article>
-              <article class="admin-stat-card">
-                <div class="admin-stat-card__icon amber">
-                  <i class="fas fa-file-chart-column"></i>
-                </div>
-                <div>
-                  <h4>92.4%</h4>
-                  <p>Retention</p>
-                </div>
-              </article>
+            <div class="tabs">
+              <button class="tab active" data-tab="system">System Settings</button>
+              <button class="tab" data-tab="profile">Admin Profile</button>
+              <button class="tab" data-tab="notifications">Notification Settings</button>
             </div>
 
-            <div class="admin-grid-2">
-              <section class="admin-panel admin-panel--chart">
-                <div class="admin-panel__header">
-                  <div>
-                    <h3>Revenue Trend</h3>
-                    <p>Revenue performance across the selected period</p>
-                  </div>
+            <article class="panel tab-panel active" data-panel="system">
+              <form class="form-grid" id="systemSettingsForm">
+                <label><span>Site name</span><input class="field" name="site_name" /></label>
+                <label><span>Default calorie limit</span><input class="field" name="default_calorie_limit" type="number" /></label>
+                <label><span>Allow self-registration</span>
+                  <select class="field" name="allow_self_registration">
+                    <option value="1">On</option>
+                    <option value="0">Off</option>
+                  </select>
+                </label>
+                <label><span>Default role after registration</span>
+                  <select class="field" name="default_role">
+                    <option value="user">User</option>
+                    <option value="dietitian">Dietitian</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+                <div class="form-actions">
+                  <button class="primary-btn" type="submit">Save Settings</button>
                 </div>
-                <div class="chart-box">
-                  <canvas id="monthlyPlansChart"></canvas>
-                </div>
-              </section>
+              </form>
+            </article>
 
-              <section class="admin-panel">
-                <div class="admin-panel__header">
-                  <div>
-                    <h3>Report Insights</h3>
-                    <p>Operational highlights for this period</p>
-                  </div>
-                </div>
-                <div class="insight-stack">
-                  <article class="insight-pill">
-                    <strong>Highest growth</strong>
-                    <span>July delivered the strongest user acquisition.</span>
-                  </article>
-                  <article class="insight-pill">
-                    <strong>Subscription stability</strong>
-                    <span>Churn remained below 3% during the last cycle.</span>
-                  </article>
-                  <article class="insight-pill">
-                    <strong>Care team activity</strong>
-                    <span>Dietitian approvals increased by 12% month over month.</span>
-                  </article>
-                </div>
-              </section>
-            </div>
+            <article class="panel tab-panel" data-panel="profile">
+              <form class="form-grid" id="profileSettingsForm">
+                <label><span>Admin name</span><input class="field" name="admin_name" /></label>
+                <label><span>Admin email</span><input class="field" name="admin_email" type="email" /></label>
+                <label><span>Current password</span><input class="field" name="current_password" type="password" /></label>
+                <label><span>New password</span><input class="field" name="new_password" type="password" /></label>
+                <label><span>Confirm password</span><input class="field" name="confirm_password" type="password" /></label>
+                <div class="form-actions"><button class="primary-btn" type="submit">Save Profile</button></div>
+              </form>
+            </article>
+
+            <article class="panel tab-panel" data-panel="notifications">
+              <form class="form-grid" id="notificationSettingsForm">
+                <label class="switch-row"><span>Email notifications for calorie alerts</span><input type="checkbox" name="email_alerts" /></label>
+                <label class="switch-row"><span>Email notifications for new registrations</span><input type="checkbox" name="new_registration_alerts" /></label>
+                <label><span>Alert threshold % above limit</span><input class="field" name="alert_threshold" type="range" min="0" max="50" value="20" /></label>
+                <div class="form-actions"><button class="primary-btn" type="submit">Save Notification Settings</button></div>
+              </form>
+            </article>
           </section>
         </main>
       </div>
     </div>
 
-    <div class="admin-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="overlay" id="overlay"></div>
+    <div class="drawer" id="drawer"></div>
+    <div class="modal-layer" id="modalLayer"></div>
+    <div class="toast-stack" id="toastStack"></div>
+    <div class="loading-layer" id="loadingLayer" hidden><div class="spinner"></div></div>
 
-    <div class="toast-container" id="toastContainer"></div>
-
-    <div class="admin-modal" id="userModal">
-      <div class="admin-modal__dialog">
-        <div class="admin-modal__header">
-          <h3 id="userModalTitle">Add User</h3>
-          <button class="admin-icon-btn" onclick="closeModal('userModal')">
-            <i class="fas fa-times"></i>
-          </button>
+    <template id="confirmTemplate">
+      <div class="modal">
+        <div class="modal__card modal__card--sm">
+          <h3 id="confirmTitle">Are you sure?</h3>
+          <p id="confirmMessage">This action cannot be undone.</p>
+          <div class="modal__actions">
+            <button class="ghost-btn" data-close>Cancel</button>
+            <button class="primary-btn" id="confirmActionBtn">Confirm</button>
+          </div>
         </div>
-        <form id="userForm" class="admin-form-grid">
-          <input type="hidden" id="userId" />
-          <label>
-            <span>Name</span>
-            <input type="text" id="newUserName" required />
-          </label>
-          <label>
-            <span>Email</span>
-            <input type="email" id="newUserEmail" required />
-          </label>
-          <label>
-            <span>Phone</span>
-            <input type="text" id="newUserPhone" />
-          </label>
-          <label>
-            <span>Subscription Status</span>
-            <select id="newUserStatus">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </label>
-          <div class="admin-modal__actions">
-            <button type="button" class="admin-soft-btn" onclick="closeModal('userModal')">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save User</button>
+      </div>
+    </template>
+
+    <template id="userModalTemplate">
+      <div class="modal">
+        <form class="modal__card modal__card--lg" id="userForm">
+          <div class="modal__head">
+            <h3 id="userModalTitle">Add User</h3>
+            <button type="button" class="icon-btn" data-close><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <input type="hidden" name="id" />
+          <div class="form-grid form-grid--2">
+            <label><span>Name</span><input class="field" name="name" required /></label>
+            <label><span>Email</span><input class="field" name="email" type="email" required /></label>
+            <label><span>Password</span><input class="field" name="password" type="password" /></label>
+            <label><span>Role</span>
+              <select class="field" name="role">
+                <option value="user">User</option>
+                <option value="dietitian">Dietitian</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+            <label><span>Status</span>
+              <select class="field" name="status">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </label>
+            <label><span>Health goal</span>
+              <select class="field" name="health_goal">
+                <option value="Weight Loss">Weight Loss</option>
+                <option value="Muscle Gain">Muscle Gain</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+          </div>
+          <div class="modal__actions">
+            <button type="button" class="ghost-btn" data-close>Cancel</button>
+            <button class="primary-btn" type="submit">Save User</button>
           </div>
         </form>
       </div>
-    </div>
+    </template>
 
-    <div class="admin-modal" id="dietitianModal">
-      <div class="admin-modal__dialog">
-        <div class="admin-modal__header">
-          <h3 id="dietitianModalTitle">Add Dietitian</h3>
-          <button class="admin-icon-btn" onclick="closeModal('dietitianModal')">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <form id="dietitianForm" class="admin-form-grid">
-          <input type="hidden" id="dietitianId" />
-          <label>
-            <span>Name</span>
-            <input type="text" id="newDietitianName" required />
-          </label>
-          <label>
-            <span>Email</span>
-            <input type="email" id="newDietitianEmail" required />
-          </label>
-          <label>
-            <span>Qualification</span>
-            <input type="text" id="newDietitianQualification" required />
-          </label>
-          <label>
-            <span>Specialization</span>
-            <input type="text" id="newDietitianSpecialty" required />
-          </label>
-          <label>
-            <span>Availability</span>
-            <select id="newDietitianAvailability">
-              <option value="available">Available</option>
-              <option value="unavailable">Unavailable</option>
-            </select>
-          </label>
-          <label>
-            <span>Approval Status</span>
-            <select id="newDietitianStatus">
-              <option value="approved">Approved</option>
-              <option value="pending">Pending</option>
-            </select>
-          </label>
-          <div class="admin-modal__actions">
-            <button type="button" class="admin-soft-btn" onclick="closeModal('dietitianModal')">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Dietitian</button>
+    <template id="dietitianModalTemplate">
+      <div class="modal">
+        <form class="modal__card modal__card--lg" id="dietitianForm">
+          <div class="modal__head">
+            <h3 id="dietitianModalTitle">Add Dietitian</h3>
+            <button type="button" class="icon-btn" data-close><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <input type="hidden" name="id" />
+          <div class="form-grid form-grid--2">
+            <label><span>Name</span><input class="field" name="name" required /></label>
+            <label><span>Email</span><input class="field" name="email" type="email" required /></label>
+            <label><span>Password</span><input class="field" name="password" type="password" /></label>
+            <label><span>Status</span><select class="field" name="status"><option value="approved">Approved</option><option value="pending">Pending</option></select></label>
+          </div>
+          <div class="modal__actions">
+            <button type="button" class="ghost-btn" data-close>Cancel</button>
+            <button class="primary-btn" type="submit">Save Dietitian</button>
           </div>
         </form>
       </div>
-    </div>
+    </template>
 
-    <div class="admin-modal" id="planModal">
-      <div class="admin-modal__dialog">
-        <div class="admin-modal__header">
-          <h3 id="planModalTitle">Create Plan</h3>
-          <button class="admin-icon-btn" onclick="closeModal('planModal')">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <form id="planForm" class="admin-form-grid">
-          <input type="hidden" id="planId" />
-          <label>
-            <span>Plan Name</span>
-            <input type="text" id="newPlanName" required />
-          </label>
-          <label>
-            <span>Category</span>
-            <select id="newPlanType">
-              <option value="weight-loss">Weight Loss</option>
-              <option value="muscle-gain">Muscle Gain</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="clinical">Clinical</option>
-            </select>
-          </label>
-          <label>
-            <span>Calories</span>
-            <input type="number" id="newPlanCalories" required />
-          </label>
-          <label>
-            <span>Duration (days)</span>
-            <input type="number" id="newPlanDuration" required />
-          </label>
-          <label>
-            <span>Price</span>
-            <input type="number" id="newPlanPrice" required />
-          </label>
-          <label class="admin-form-grid__full">
-            <span>Description</span>
-            <textarea id="newPlanDescription" rows="4"></textarea>
-          </label>
-          <div class="admin-modal__actions">
-            <button type="button" class="admin-soft-btn" onclick="closeModal('planModal')">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Plan</button>
+    <template id="planModalTemplate">
+      <div class="modal">
+        <form class="modal__card modal__card--xl" id="planForm">
+          <div class="modal__head">
+            <h3 id="planModalTitle">Create Plan</h3>
+            <button type="button" class="icon-btn" data-close><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <input type="hidden" name="id" />
+          <div class="form-grid form-grid--2">
+            <label><span>User</span><select class="field" name="user_id" id="planUserSelect"></select></label>
+            <label><span>Dietitian</span><select class="field" name="dietitian_id" id="planDietitianSelect"></select></label>
+            <label><span>Plan name</span><input class="field" name="title" required /></label>
+            <label><span>Calorie target</span><input class="field" name="calories" type="number" required /></label>
+            <label><span>Duration (days)</span><input class="field" name="duration_days" type="number" required /></label>
+            <label><span>Status</span>
+              <select class="field" name="status">
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </label>
+          </div>
+          <label><span>Notes</span><textarea class="field field--textarea" name="notes" rows="4"></textarea></label>
+          <div class="modal__actions">
+            <button type="button" class="ghost-btn" data-close>Cancel</button>
+            <button class="primary-btn" type="submit">Save Plan</button>
           </div>
         </form>
       </div>
-    </div>
+    </template>
 
-    <div class="admin-modal" id="confirmModal">
-      <div class="admin-modal__dialog admin-modal__dialog--sm">
-        <div class="admin-confirm-box">
-          <div class="admin-confirm-box__icon">
-            <i class="fas fa-triangle-exclamation"></i>
-          </div>
-          <h3 id="confirmTitle">Confirm Action</h3>
-          <p id="confirmMessage">Are you sure you want to continue?</p>
-          <div class="admin-modal__actions admin-modal__actions--center">
-            <button type="button" class="admin-soft-btn" onclick="closeModal('confirmModal')">Cancel</button>
-            <button type="button" class="btn btn-primary" id="confirmActionButton">Confirm</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <script src="js/charts.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/admin-dashboard-page.js?v=20260610-2"></script>
   </body>
 </html>

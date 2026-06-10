@@ -95,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'message' => 'Meal plan updated successfully.',
             'id' => $id,
         ]);
+        return;
     }
 
     $stmt = $pdo->prepare(

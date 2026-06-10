@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeAdminDashboard() {
-  const user = getCurrentUser?.() || { name: 'Admin User', role: 'admin' };
+  const user = getCurrentUser();
 
   hydrateProfile(user);
   loadUsers();
@@ -63,6 +63,26 @@ function initializeAdminDashboard() {
   showSection('home');
   initializeCharts();
   window.addEventListener('resize', handleResponsiveResize);
+}
+
+function getCurrentUser() {
+  const rawUser = localStorage.getItem('dietSystemUser');
+
+  if (!rawUser) {
+    return { name: 'Admin User', role: 'admin' };
+  }
+
+  try {
+    const parsed = JSON.parse(rawUser);
+
+    return {
+      name: parsed?.name || 'Admin User',
+      role: parsed?.role || 'admin',
+      email: parsed?.email || '',
+    };
+  } catch (error) {
+    return { name: 'Admin User', role: 'admin' };
+  }
 }
 
 function hydrateProfile(user) {
@@ -879,6 +899,10 @@ function updateCurrentDate() {
 }
 
 function initializeCharts() {
+  if (typeof Chart === 'undefined') {
+    return;
+  }
+
   createActivityChart();
   createStatusChart();
   if (currentSection === 'reports') {
@@ -887,6 +911,10 @@ function initializeCharts() {
 }
 
 function updateAllCharts() {
+  if (typeof Chart === 'undefined') {
+    return;
+  }
+
   if (currentSection === 'reports') {
     updateReportsChart();
   }
@@ -1114,6 +1142,10 @@ function getThemeColor() {
 }
 
 function refreshSectionVisuals(sectionId) {
+  if (typeof Chart === 'undefined') {
+    return;
+  }
+
   if (sectionId === 'reports') {
     requestAnimationFrame(() => {
       updateReportsChart();
@@ -1127,6 +1159,10 @@ function refreshSectionVisuals(sectionId) {
 }
 
 function handleResponsiveResize() {
+  if (typeof Chart === 'undefined') {
+    return;
+  }
+
   Chart.getChart('activityChart')?.resize();
   Chart.getChart('roleDistributionChart')?.resize();
   Chart.getChart('monthlyPlansChart')?.resize();

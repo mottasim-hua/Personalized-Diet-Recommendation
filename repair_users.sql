@@ -1,0 +1,26 @@
+USE diet_system;
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS users;
+SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE users (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NULL,
+    first_name VARCHAR(50) NULL,
+    last_name VARCHAR(50) NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    phone VARCHAR(20) NULL,
+    gender VARCHAR(20) NULL,
+    date_of_birth DATE NULL,
+    password VARCHAR(255) NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'user',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_login_at TIMESTAMP NULL DEFAULT NULL,
+    KEY idx_email (email),
+    KEY idx_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

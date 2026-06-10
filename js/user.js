@@ -1,13 +1,48 @@
 
 const ML_PER_GLASS = 250;
+const IS_SERVER_MODE = true;
+function getLocalProjectBaseCandidates() {
+  if (window.location.protocol !== 'file:') {
+    return [];
+  }
+
+  const path = decodeURIComponent(window.location.pathname || '');
+  const segments = path.split('/').filter(Boolean);
+  const projectFolder = segments.length >= 2 ? segments[segments.length - 2] : '';
+
+  if (!projectFolder) {
+    return [];
+  }
+
+  return [
+    `http://localhost/${projectFolder}/`,
+    `http://127.0.0.1/${projectFolder}/`,
+  ];
+}
+
+const API_BASE_URL = (() => {
+  const override = window.DIET_SYSTEM_API_BASE_URL || localStorage.getItem('dietSystemApiBaseUrl');
+  const scriptBase = document.currentScript?.src && !document.currentScript.src.startsWith('file:')
+    ? new URL('../', document.currentScript.src).toString()
+    : null;
+  if (override && !String(override).startsWith('file:')) return override;
+  if (scriptBase) return scriptBase;
+  if (window.location.protocol !== 'file:') return new URL('./', window.location.href).toString();
+  const localProjectBase = getLocalProjectBaseCandidates()[0];
+  if (localProjectBase) return localProjectBase;
+  return 'http://localhost:8000/';
+})();
 
 let foodLog = [];
 let calorieLimit = 2000;
 let totalCalories = 0;
 let weeklyChartInstance = null;
+let weeklySummary = [];
+let dietPlan = null;
 let waterTracker = getDefaultWaterTracker();
 let dismissedWarningSignature = null;
 let currentWarningSignature = null;
+let currentSessionUser = null;
 
 if (!window.storage) {
   window.storage = {
@@ -30,12 +65,77 @@ if (!window.storage) {
   };
 }
 
+async function apiRequest(path, options = {}) {
+  const requestOptions = {
+    method: options.method || 'GET',
+    credentials: 'include',
+    headers: {
+      'Accept': 'application/json'
+    }
+  };
+
+  if (options.body !== undefined) {
+    requestOptions.headers['Content-Type'] = 'application/json';
+    requestOptions.body = JSON.stringify(options.body);
+  }
+
+  const response = await fetch(new URL(String(path || '').replace(/^\/+/, ''), API_BASE_URL).toString(), requestOptions);
+
+  const text = await response.text();
+  let payload = {};
+
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch (error) {
+    payload = { success: false, message: text || 'Invalid server response.' };
+  }
+
+  if (!response.ok || payload.success === false) {
+    throw new Error(payload.message || `Request failed with status ${response.status}`);
+  }
+
+  return payload;
+}
+
+async function ensureServerSession() {
+  try {
+    const status = await apiRequest('api/auth/status.php');
+    const sessionUser = status?.data || {};
+
+    if (!sessionUser.authenticated) {
+      localStorage.removeItem('dietSystemUser');
+      currentSessionUser = null;
+      window.location.href = 'index.html';
+      return null;
+    }
+
+    currentSessionUser = {
+      id: sessionUser.user_id,
+      name: sessionUser.name,
+      email: sessionUser.email,
+      role: sessionUser.role
+    };
+
+    localStorage.setItem('dietSystemUser', JSON.stringify({
+      ...currentSessionUser,
+      loginTime: new Date().toISOString()
+    }));
+
+    return currentSessionUser;
+  } catch (error) {
+    localStorage.removeItem('dietSystemUser');
+    currentSessionUser = null;
+    window.location.href = 'index.html';
+    return null;
+  }
+}
+
 // Initialize user dashboard
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   if (!window.location.href.includes('user-dashboard.html')) return;
 
-  loadUserData();
-  loadFoodLog();
+  await ensureServerSession();
+  await loadUserData();
   loadWaterTracker();
   setupNavigation();
   showSection('home');
@@ -158,22 +258,31 @@ function setBadgeState(element, text, state) {
   }
 }
 
-// Load user data from storage
-function loadUserData() {
-  const user = getCurrentUser();
-  if (!user) {
-    window.location.href = 'index.html';
-    return;
-  }
+function normalizeHealthProfile(profile) {
+  return {
+    age: profile?.age ?? '',
+    gender: profile?.gender ?? '',
+    weight: profile?.weight ?? '',
+    height: profile?.height ?? '',
+    activityLevel: profile?.activity_level ?? profile?.activityLevel ?? '',
+    dietaryPreference: profile?.dietary_preference ?? profile?.dietaryPreference ?? '',
+    healthGoal: profile?.health_goal ?? profile?.healthGoal ?? '',
+    calorieLimit: profile?.calorie_limit ?? profile?.calorieLimit ?? 2000
+  };
+}
 
-  const userName = document.getElementById('userName');
-  const welcomeName = document.getElementById('welcomeName') || document.getElementById('heroUserName');
-  const userAvatar = document.getElementById('userAvatar');
+function mapFoodLogEntry(entry) {
+  return {
+    id: Number(entry.id),
+    mealType: String(entry.meal_type || entry.mealType || '').toLowerCase(),
+    foodName: entry.food_name || entry.foodName || '',
+    calories: Number(entry.calories || 0),
+    quantity: 1,
+    date: entry.logged_date || entry.date || getTodayKey()
+  };
+}
 
-  if (userName) userName.textContent = user.name;
-  if (welcomeName) welcomeName.textContent = user.name;
-  if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
-
+function loadFallbackUserData() {
   const healthData = getStoredValue('healthData', {}, 'healthData');
   document.getElementById('age').value = healthData.age || '';
   document.getElementById('gender').value = healthData.gender || '';
@@ -189,6 +298,89 @@ function loadUserData() {
 
   if (healthData.weight && healthData.height) {
     calculateBMI();
+  }
+
+  const savedLog = getStoredValue('foodLog', [], 'foodLog');
+  foodLog = Array.isArray(savedLog) ? savedLog : [];
+  renderFoodLog();
+  renderDietPlan(null);
+}
+
+async function loadUserData() {
+  const user = currentSessionUser || getCurrentUser();
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  const userName = document.getElementById('userName');
+  const welcomeName = document.getElementById('welcomeName') || document.getElementById('heroUserName');
+  const userAvatar = document.getElementById('userAvatar');
+
+  if (userName) userName.textContent = user.name;
+  if (welcomeName) welcomeName.textContent = user.name;
+  if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
+
+  if (!IS_SERVER_MODE) {
+    loadFallbackUserData();
+    loadFoodLog();
+    updateCalorieDisplay();
+    initWeeklyChart();
+    return;
+  }
+
+  try {
+    const today = getTodayKey();
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - 6);
+    const startDate = weekStart.toLocaleDateString('en-CA');
+
+    const [healthRes, foodRes, reportRes, planRes] = await Promise.all([
+      apiRequest('api/user/health_data.php'),
+      apiRequest(`api/user/food_log.php?date=${encodeURIComponent(today)}`),
+      apiRequest(`api/user/report.php?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(today)}`),
+      apiRequest('api/user/diet_plan.php')
+    ]);
+
+    const healthData = normalizeHealthProfile(healthRes.data || {});
+    document.getElementById('age').value = healthData.age || '';
+    document.getElementById('gender').value = healthData.gender || '';
+    document.getElementById('weight').value = healthData.weight || '';
+    document.getElementById('height').value = healthData.height || '';
+    document.getElementById('activityLevel').value = healthData.activityLevel || '';
+    document.getElementById('dietaryPreference').value = healthData.dietaryPreference || '';
+    document.getElementById('healthGoal').value = healthData.healthGoal || '';
+
+    calorieLimit = normalizePositiveNumber(healthData.calorieLimit || 2000, 2000);
+    syncCalorieGoalInputs();
+
+    if (healthData.weight && healthData.height) {
+      calculateBMI();
+    }
+
+    foodLog = Array.isArray(foodRes.data) ? foodRes.data.map(mapFoodLogEntry) : [];
+    weeklySummary = Array.isArray(reportRes.data) ? reportRes.data : [];
+    dietPlan = planRes.data || null;
+
+    setStoredValue('healthData', healthData, 'healthData');
+    setStoredValue('calorieLimit', String(calorieLimit), 'calorieLimit');
+    setStoredValue('foodLog', foodLog, 'foodLog');
+
+    renderFoodLog();
+    renderDietPlan(dietPlan);
+    updateCalorieDisplay();
+    initWeeklyChart();
+  } catch (error) {
+    console.error('Failed to load server data:', error);
+    showToast(error.message || 'Server data could not be loaded. Please check Apache, MySQL, and session access.', 'error');
+    foodLog = [];
+    weeklySummary = [];
+    dietPlan = null;
+    renderFoodLog();
+    renderDietPlan(null);
+    loadFoodLog();
+    updateCalorieDisplay();
+    initWeeklyChart();
   }
 }
 
@@ -249,19 +441,49 @@ function buildHealthDataPayload() {
   };
 }
 
-function persistHealthData() {
-  setStoredValue('healthData', buildHealthDataPayload(), 'healthData');
+async function persistHealthData() {
+  const payload = buildHealthDataPayload();
+  const serverPayload = {
+    user_id: currentSessionUser?.id || getCurrentUser()?.id || undefined,
+    age: payload.age,
+    gender: payload.gender,
+    weight: payload.weight,
+    height: payload.height,
+    activity_level: payload.activityLevel,
+    dietary_preference: payload.dietaryPreference,
+    health_goal: payload.healthGoal,
+    calorie_limit: payload.calorieLimit
+  };
+
+  if (IS_SERVER_MODE) {
+    const result = await apiRequest('api/user/health_data.php', {
+      method: 'POST',
+      body: serverPayload
+    });
+
+    if (result?.data) {
+      const saved = normalizeHealthProfile(result.data);
+      setStoredValue('healthData', saved, 'healthData');
+      setStoredValue('calorieLimit', String(normalizePositiveNumber(saved.calorieLimit || calorieLimit, 2000)), 'calorieLimit');
+    }
+  }
+
+  setStoredValue('healthData', payload, 'healthData');
   setStoredValue('calorieLimit', String(calorieLimit), 'calorieLimit');
 }
 
 // Save health data
-function saveHealthData(event) {
+async function saveHealthData(event) {
   event.preventDefault();
 
-  persistHealthData();
-  calculateBMI();
-  updateCalorieDisplay();
-  showToast('Health data saved successfully!', 'success');
+  try {
+    await persistHealthData();
+    calculateBMI();
+    updateCalorieDisplay();
+    showToast('Health data saved successfully!', 'success');
+  } catch (error) {
+    showToast(error.message || 'Health data could not be saved.', 'error');
+  }
 }
 
 function syncCalorieGoalInputs() {
@@ -278,15 +500,34 @@ function updateCalorieGoal(value) {
 
   calorieLimit = Math.round(parsedGoal);
   syncCalorieGoalInputs();
-  persistHealthData();
+  persistHealthData().catch((error) => {
+    showToast(error.message || 'Calorie goal could not be saved.', 'error');
+  });
   updateCalorieDisplay();
 }
 
 // Load food log from storage
 function loadFoodLog() {
-  const savedLog = getStoredValue('foodLog', [], 'foodLog');
-  foodLog = Array.isArray(savedLog) ? savedLog : [];
-  renderFoodLog();
+  if (!IS_SERVER_MODE) {
+    const savedLog = getStoredValue('foodLog', [], 'foodLog');
+    foodLog = Array.isArray(savedLog) ? savedLog : [];
+    renderFoodLog();
+    return;
+  }
+
+  const today = getTodayKey();
+  apiRequest(`api/user/food_log.php?date=${encodeURIComponent(today)}`)
+    .then((result) => {
+      foodLog = Array.isArray(result.data) ? result.data.map(mapFoodLogEntry) : [];
+      setStoredValue('foodLog', foodLog, 'foodLog');
+      renderFoodLog();
+      updateCalorieDisplay();
+    })
+    .catch((error) => {
+      console.error('Failed to load food log:', error);
+      foodLog = [];
+      renderFoodLog();
+    });
 }
 
 function saveFoodLog() {
@@ -329,7 +570,7 @@ function initializeDashboardControls() {
 }
 
 // Add food entry
-function addFoodEntry(event) {
+async function addFoodEntry(event) {
   event.preventDefault();
 
   const mealType = document.getElementById('mealType').value;
@@ -351,17 +592,32 @@ function addFoodEntry(event) {
     date: getTodayKey()
   };
 
-  foodLog.push(entry);
-  saveFoodLog();
+  try {
+    if (IS_SERVER_MODE) {
+      await apiRequest('api/user/food_log.php', {
+        method: 'POST',
+        body: {
+          food_name: foodName,
+          calories: calories * quantity,
+          meal_type: mealType,
+          date: entry.date
+        }
+      });
+      await loadFoodLog();
+    } else {
+      foodLog.push(entry);
+      saveFoodLog();
+      renderFoodLog();
+      updateCalorieDisplay();
+    }
 
-  document.getElementById('foodName').value = '';
-  document.getElementById('foodCalories').value = '';
-  document.getElementById('foodQuantity').value = '1';
-
-  renderFoodLog();
-  updateCalorieDisplay();
-
-  showToast('Food entry added!', 'success');
+    document.getElementById('foodName').value = '';
+    document.getElementById('foodCalories').value = '';
+    document.getElementById('foodQuantity').value = '1';
+    showToast('Food entry added!', 'success');
+  } catch (error) {
+    showToast(error.message || 'Food entry could not be saved.', 'error');
+  }
 }
 
 // Render food log table
@@ -411,15 +667,25 @@ function getMealTypeClass(mealType) {
 }
 
 // Delete food entry
-function deleteFoodEntry(id) {
-  foodLog = foodLog.filter(entry => entry.id !== id);
-  saveFoodLog();
-  renderFoodLog();
-  updateCalorieDisplay();
-  showToast('Food entry deleted', 'success');
+async function deleteFoodEntry(id) {
+  try {
+    if (IS_SERVER_MODE) {
+      await apiRequest(`api/user/food_log.php?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await loadFoodLog();
+    } else {
+      foodLog = foodLog.filter(entry => entry.id !== id);
+      saveFoodLog();
+      renderFoodLog();
+      updateCalorieDisplay();
+    }
+
+    showToast('Food entry deleted', 'success');
+  } catch (error) {
+    showToast(error.message || 'Food entry could not be deleted.', 'error');
+  }
 }
 
-function resetTodayFoodLog() {
+async function resetTodayFoodLog() {
   const today = getTodayKey();
   const hasEntries = foodLog.some(entry => entry.date === today);
 
@@ -428,11 +694,22 @@ function resetTodayFoodLog() {
     return;
   }
 
-  foodLog = foodLog.filter(entry => entry.date !== today);
-  saveFoodLog();
-  renderFoodLog();
-  updateCalorieDisplay();
-  showToast('Today\'s food log has been reset', 'success');
+  try {
+    if (IS_SERVER_MODE) {
+      const entries = foodLog.filter(entry => entry.date === today);
+      await Promise.all(entries.map(entry => apiRequest(`api/user/food_log.php?id=${encodeURIComponent(entry.id)}`, { method: 'DELETE' })));
+      await loadFoodLog();
+    } else {
+      foodLog = foodLog.filter(entry => entry.date !== today);
+      saveFoodLog();
+      renderFoodLog();
+      updateCalorieDisplay();
+    }
+
+    showToast('Today\'s food log has been reset', 'success');
+  } catch (error) {
+    showToast(error.message || 'Today\'s food log could not be reset.', 'error');
+  }
 }
 
 // Search food log
@@ -784,9 +1061,12 @@ function buildWeeklyCalorieData() {
     date.setDate(date.getDate() - offset);
     const key = date.toLocaleDateString('en-CA');
     const label = date.toLocaleDateString('en-US', { weekday: 'short' });
-    const calories = foodLog
-      .filter(entry => entry.date === key)
-      .reduce((sum, entry) => sum + (entry.calories * entry.quantity), 0);
+    const reportEntry = weeklySummary.find(entry => String(entry.date) === key);
+    const calories = reportEntry
+      ? Number(reportEntry.total_calories || 0)
+      : foodLog
+          .filter(entry => entry.date === key)
+          .reduce((sum, entry) => sum + (entry.calories * entry.quantity), 0);
 
     days.push({ key, label, calories });
   }
@@ -886,9 +1166,94 @@ function updateReportStats(data) {
   }
 }
 
+function renderDietPlan(plan) {
+  const grid = document.querySelector('#diet-planSection .diet-plan-grid');
+  if (!grid) return;
+
+  if (!plan) {
+    grid.innerHTML = `
+      <div class="card">
+        <div class="card-body">
+          <div class="empty-state">
+            <i class="fas fa-clipboard-list"></i>
+            <p>No diet plan has been assigned yet.</p>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const days = Array.isArray(plan.days) ? plan.days : [];
+  const mealCards = days.length
+    ? days.map(day => `
+        <div class="time-card">
+          <div class="time-card-header">
+            <i class="fas fa-calendar-day"></i>
+            <span>Day ${escapeHtml(day.day)}</span>
+          </div>
+          <div class="time-card-body">
+            <div class="meal-list">
+              ${(day.meals && Object.keys(day.meals).length ? Object.entries(day.meals) : [['Meals', []]]).map(([mealName, items]) => {
+                const meals = Array.isArray(items) ? items : [];
+                return meals.length
+                  ? meals.map(item => `
+                      <div class="meal-list-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>${escapeHtml(`${mealName}: ${item.item || 'Meal'}${item.calories ? ` (${item.calories} kcal)` : ''}`)}</span>
+                      </div>
+                    `).join('')
+                  : `
+                      <div class="meal-list-item">
+                        <i class="fas fa-circle"></i>
+                        <span>${escapeHtml(mealName)} plan not filled yet</span>
+                      </div>
+                    `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('')
+    : `
+      <div class="time-card">
+        <div class="time-card-header">
+          <i class="fas fa-clipboard-list"></i>
+          <span>Plan Details</span>
+        </div>
+        <div class="time-card-body">
+          <div class="meal-list">
+            <div class="meal-list-item">
+              <i class="fas fa-check-circle"></i>
+              <span>No meal items were added yet.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+  grid.innerHTML = `
+    <div class="card">
+      <div class="card-body">
+        <h3>${escapeHtml(plan.plan_name || 'Your Diet Plan')}</h3>
+        <p class="text-muted">${escapeHtml(plan.start_date || 'N/A')} to ${escapeHtml(plan.end_date || 'N/A')} • ${escapeHtml(plan.calorie_target || '--')} kcal/day</p>
+      </div>
+    </div>
+    ${mealCards}
+  `;
+}
+
 // Capitalize first letter
 function capitalizeFirst(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Setup navigation

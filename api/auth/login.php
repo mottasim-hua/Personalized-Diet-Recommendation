@@ -28,7 +28,7 @@ function finish_login_error(string $message, int $statusCode): never
 
 function finish_login_success(array $user): never
 {
-    $role = (string) $user['role'];
+    $role = normalize_user_role((string) $user['role']);
     $payload = [
         'success' => true,
         'message' => 'Login successful.',
@@ -47,12 +47,12 @@ function finish_login_success(array $user): never
         send_json($payload);
     }
 
-    $redirect = '../../user-dashboard.html';
+    $redirect = '../../user-dashboard.html?v=20260608-2';
 
     if ($role === 'admin') {
-        $redirect = '../../admin-dashboard.html';
+        $redirect = '../../admin-dashboard.html?v=20260608-2';
     } elseif ($role === 'dietitian') {
-        $redirect = '../../dietitian-dashboard.html';
+        $redirect = '../../dietitian-dashboard.html?v=20260608-2';
     }
 
     header('Location: ' . $redirect);
@@ -79,14 +79,15 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 $pdo = get_db();
+
 $userPk = user_primary_key_column($pdo);
-$nameExpr = user_name_expression($pdo);
-$roleExpr = user_role_expression();
+$nameExpr = user_name_expression($pdo, 'u');
+$roleExpr = user_role_expression('u');
 
 $query = $pdo->prepare(
-    "SELECT $userPk AS id, $nameExpr AS name, email, password_hash, $roleExpr AS role
-     FROM users
-     WHERE email = :email
+    "SELECT u.$userPk AS id, $nameExpr AS name, u.email, u.password_hash, $roleExpr AS role
+     FROM users u
+     WHERE u.email = :email
      LIMIT 1"
 );
 $query->execute(['email' => $email]);
@@ -109,8 +110,11 @@ if (!$isValid) {
 session_regenerate_id(true);
 $_SESSION['user_id'] = (int) $user['id'];
 $_SESSION['role'] = normalize_user_role((string) $user['role']);
-$_SESSION['user_name'] = $user['name'];
-$_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_name'] = $user['name'];
+    $_SESSION['user_email'] = $user['email'];
+
+$updateLogin = $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE $userPk = :id");
+$updateLogin->execute(['id' => (int) $user['id']]);
 
 send_json([
     'success' => true,

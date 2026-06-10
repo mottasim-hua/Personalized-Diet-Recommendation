@@ -1,3 +1,68 @@
+let resolvedApiBaseUrl = null;
+
+function normalizeBaseUrl(baseUrl) {
+  try {
+    const normalized = new URL('./', baseUrl).toString();
+    return normalized.startsWith('file:') ? null : normalized;
+  } catch {
+    return null;
+  }
+}
+
+function getLocalProjectBaseCandidates() {
+  if (window.location.protocol !== 'file:') {
+    return [];
+  }
+
+  const path = decodeURIComponent(window.location.pathname || '');
+  const segments = path.split('/').filter(Boolean);
+  const projectFolder = segments.length >= 2 ? segments[segments.length - 2] : '';
+
+  if (!projectFolder) {
+    return [];
+  }
+
+  return [
+    `http://localhost/${projectFolder}/`,
+    `http://127.0.0.1/${projectFolder}/`,
+  ];
+}
+
+function getApiBaseCandidates() {
+  const candidates = [];
+  const override = window.DIET_SYSTEM_API_BASE_URL || localStorage.getItem('dietSystemApiBaseUrl');
+  const scriptBase = document.currentScript?.src && !document.currentScript.src.startsWith('file:')
+    ? new URL('../', document.currentScript.src).toString()
+    : null;
+  const currentDir = window.location.protocol !== 'file:' ? new URL('./', window.location.href).toString() : null;
+
+  [override, scriptBase, currentDir, ...getLocalProjectBaseCandidates(), 'http://localhost:8000/', 'http://127.0.0.1:8000/', 'http://localhost/', 'http://127.0.0.1/']
+    .forEach((candidate) => {
+      const normalized = normalizeBaseUrl(candidate);
+      if (normalized && !candidates.includes(normalized)) {
+        candidates.push(normalized);
+      }
+    });
+
+  return candidates;
+}
+
+function setResolvedApiBaseUrl(baseUrl) {
+  const normalized = normalizeBaseUrl(baseUrl);
+  if (!normalized) return null;
+
+  resolvedApiBaseUrl = normalized;
+  window.DIET_SYSTEM_API_BASE_URL = normalized;
+  localStorage.setItem('dietSystemApiBaseUrl', normalized);
+
+  return normalized;
+}
+
+function getResolvedApiBaseUrl() {
+  const override = normalizeBaseUrl(resolvedApiBaseUrl || window.DIET_SYSTEM_API_BASE_URL || localStorage.getItem('dietSystemApiBaseUrl'));
+  return override || getApiBaseCandidates()[0] || 'http://localhost:8000/';
+}
+
 // ========================================
 // Diet System - Authentication JavaScript
 // ========================================
@@ -8,12 +73,13 @@ document.addEventListener('DOMContentLoaded', function() {
   setCurrentDate();
 });
 
-function isRunningFromFile() {
-  return window.location.protocol === 'file:';
+function getApiUrl(path) {
+  const normalizedPath = String(path || '').replace(/^\/+/, '');
+  return new URL(normalizedPath, getResolvedApiBaseUrl()).toString();
 }
 
-function getApiUrl(path) {
-  return path;
+function normalizeRole(role) {
+  return String(role || '').trim().toLowerCase();
 }
 
 function getLocalAuthUsers() {
@@ -116,14 +182,37 @@ async function parseJsonResponse(response) {
 }
 
 async function checkServerConnection() {
-  if (isRunningFromFile()) {
-    return {
-      success: true,
-      mode: 'local'
-    };
+  const candidates = getApiBaseCandidates();
+
+  for (const baseUrl of candidates) {
+    try {
+      const testUrl = new URL('api/test-connection.php', baseUrl).toString();
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      const payload = await parseJsonResponse(response);
+      if (response.ok && payload.success) {
+        setResolvedApiBaseUrl(baseUrl);
+        return {
+          success: true,
+          mode: 'server',
+          apiBaseUrl: baseUrl
+        };
+      }
+    } catch (error) {
+      // Try the next candidate
+    }
   }
 
-  return { success: true, mode: 'server' };
+  return {
+    success: false,
+    message: 'Cannot reach the PHP server. Please start Apache/PHP and MySQL, then try again.'
+  };
 }
 
 // Toggle between login and register forms
@@ -214,23 +303,10 @@ async function handleLogin(event) {
     return;
   }
 
-  if (connection.mode === 'local') {
-    const result = loginWithLocalAuth(email, password);
-
-    if (!result.success) {
-      showToast(result.message || 'Login failed', 'error');
-      return;
-    }
-
-    showToast('Login successful! Running in local mode.', 'success');
-    redirectByRole(result.user.role);
-    return;
-  }
-  
   try {
     const response = await fetch(getApiUrl('api/auth/login.php'), {
       method: 'POST',
-      credentials: 'same-origin',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -249,7 +325,10 @@ async function handleLogin(event) {
     showToast('Login successful! Redirecting...', 'success');
     redirectByRole(result.user.role);
   } catch (error) {
-    showToast('Login request failed. Make sure Apache and MySQL are running and open the app from localhost.', 'error');
+    showToast(
+      'Login request failed. Make sure Apache, MySQL, and the API are running.',
+      'error'
+    );
   }
 }
 
@@ -291,23 +370,10 @@ async function handleRegister(event) {
     return;
   }
 
-  if (connection.mode === 'local') {
-    const result = registerWithLocalAuth(name, email, password, role);
-
-    if (!result.success) {
-      showToast(result.message || 'Registration failed', 'error');
-      return;
-    }
-
-    showToast('Registration successful! Running in local mode.', 'success');
-    redirectByRole(result.user.role);
-    return;
-  }
-  
   try {
     const response = await fetch(getApiUrl('api/auth/register.php'), {
       method: 'POST',
-      credentials: 'same-origin',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -330,12 +396,15 @@ async function handleRegister(event) {
     showToast('Registration successful! Redirecting...', 'success');
     redirectByRole(result.user.role);
   } catch (error) {
-    showToast('Registration request failed. Make sure Apache and MySQL are running and open the app from localhost.', 'error');
+    showToast(
+      'Registration request failed. Make sure Apache, MySQL, and the API are running.',
+      'error'
+    );
   }
 }
 
 // Check authentication status
-function checkAuth() {
+async function checkAuth() {
   const userData = localStorage.getItem('dietSystemUser');
   
   // If on login page and already logged in, redirect to appropriate dashboard
@@ -343,17 +412,36 @@ function checkAuth() {
   const isAuthPage = path.endsWith('/') || path.endsWith('/index.html') || path.endsWith('index.html');
 
   if (userData && isAuthPage) {
-    const user = JSON.parse(userData);
-    switch (user.role) {
-      case 'admin':
-        window.location.href = 'admin-dashboard.html';
-        break;
-      case 'dietitian':
-        window.location.href = 'dietitian-dashboard.html';
-        break;
-      default:
-        window.location.href = 'user-dashboard.html';
+    try {
+      const response = await fetch(getApiUrl('api/auth/status.php'), {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      const result = await parseJsonResponse(response);
+      if (response.ok && result.success && result.data?.authenticated) {
+        const role = normalizeRole(result.data.role || JSON.parse(userData).role);
+
+        switch (role) {
+          case 'admin':
+            window.location.href = 'admin-dashboard.html';
+            break;
+          case 'dietitian':
+            window.location.href = 'dietitian-dashboard.html';
+            break;
+          default:
+            window.location.href = 'user-dashboard.html';
+        }
+        return;
+      }
+    } catch (error) {
+      // If the server cannot be checked, stay on the auth page and let login handle it.
     }
+
+    localStorage.removeItem('dietSystemUser');
   }
 }
 
@@ -362,7 +450,7 @@ async function handleLogout() {
   try {
     await fetch(getApiUrl('api/auth/logout.php'), {
       method: 'POST',
-      credentials: 'same-origin'
+      credentials: 'include'
     });
   } catch (error) {
     // Local cleanup still happens even if the backend request fails.
@@ -372,6 +460,8 @@ async function handleLogout() {
   localStorage.removeItem('healthData');
   localStorage.removeItem('foodLog');
   localStorage.removeItem('calorieLimit');
+  localStorage.removeItem('waterTracker');
+  localStorage.removeItem('dietitianAssignments');
   
   showToast('Logged out successfully', 'success');
   
@@ -506,16 +596,23 @@ if (window.location.href.includes('-dashboard.html')) {
 }
 
 function redirectByRole(role) {
+  const normalizedRole = normalizeRole(role);
+  const routes = {
+    admin: 'admin-dashboard.html?v=20260608-2',
+    dietitian: 'dietitian-dashboard.html?v=20260608-2',
+    default: 'user-dashboard.html?v=20260608-2',
+  };
+
   setTimeout(() => {
-    switch (role) {
+    switch (normalizedRole) {
       case 'admin':
-        window.location.href = 'admin-dashboard.html';
+        window.location.href = routes.admin;
         break;
       case 'dietitian':
-        window.location.href = 'dietitian-dashboard.html';
+        window.location.href = routes.dietitian;
         break;
       default:
-        window.location.href = 'user-dashboard.html';
+        window.location.href = routes.default;
     }
   }, 1000);
 }

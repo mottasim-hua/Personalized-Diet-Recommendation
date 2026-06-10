@@ -9,6 +9,8 @@ const DB_PORT = 3306;
 const DB_NAME = 'diet_system';
 const DB_USER = 'root';
 const DB_PASS = '';
+const DEFAULT_ADMIN_EMAIL = 'admin@diet.com';
+const DEFAULT_ADMIN_PASSWORD = 'Admin@1234';
 
 function send_json(array $payload, int $statusCode = 200): never
 {
@@ -90,27 +92,22 @@ function get_db(): PDO
         ], 500);
     }
 
-    ensure_schema($pdo);
+    try {
+        ensure_schema($pdo);
+    } catch (Throwable $exception) {
+        send_json([
+            'success' => false,
+            'message' => 'Database schema check failed. Please restore or recreate the MySQL database.',
+            'error' => $exception->getMessage(),
+        ], 500);
+    }
 
     return $pdo;
 }
 
 function ensure_schema(PDO $pdo): void
 {
-    $usersTableExists = (bool) $pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn();
-
-    if (!$usersTableExists) {
-        $pdo->exec(
-            'CREATE TABLE IF NOT EXISTS users (
-                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                email VARCHAR(150) NOT NULL UNIQUE,
-                password_hash VARCHAR(255) NOT NULL,
-                role ENUM("user", "dietitian", "admin") NOT NULL DEFAULT "user",
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
-        );
-    }
+    ensure_users_table($pdo);
 
     migrate_legacy_users_table($pdo);
     ensure_users_login_tracking_columns($pdo);
@@ -144,12 +141,13 @@ function ensure_schema(PDO $pdo): void
     );
 
     $userPk = user_primary_key_column($pdo);
+    $userFkType = $userPk === 'id' ? 'INT UNSIGNED' : 'INT';
 
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS app_dietitian_patients (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            dietitian_user_id INT NOT NULL,
-            client_user_id INT NULL,
+            dietitian_user_id {$userFkType} NOT NULL,
+            client_user_id {$userFkType} NULL,
             name VARCHAR(150) NOT NULL,
             email VARCHAR(150) NULL,
             age INT NULL,
@@ -171,7 +169,7 @@ function ensure_schema(PDO $pdo): void
         "CREATE TABLE IF NOT EXISTS app_meal_plans (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             patient_id INT UNSIGNED NOT NULL,
-            dietitian_user_id INT NOT NULL,
+            dietitian_user_id {$userFkType} NOT NULL,
             plan_name VARCHAR(150) NOT NULL,
             start_date DATE NULL,
             end_date DATE NULL,
@@ -193,7 +191,7 @@ function ensure_schema(PDO $pdo): void
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             patient_id INT UNSIGNED NOT NULL,
             plan_id INT UNSIGNED NULL,
-            dietitian_user_id INT NOT NULL,
+            dietitian_user_id {$userFkType} NOT NULL,
             subject VARCHAR(150) NULL,
             message TEXT NOT NULL,
             response TEXT NULL,
@@ -212,7 +210,7 @@ function ensure_schema(PDO $pdo): void
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS dietitians (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT UNSIGNED NOT NULL UNIQUE,
+            user_id ' . $userFkType . ' NOT NULL UNIQUE,
             license_number VARCHAR(50) UNIQUE,
             specialization VARCHAR(200),
             experience_years INT,
@@ -222,14 +220,14 @@ function ensure_schema(PDO $pdo): void
             is_available BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            CONSTRAINT fk_dietitian_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_dietitian_user FOREIGN KEY (user_id) REFERENCES users(' . $userPk . ') ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
     );
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS admins (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT UNSIGNED NOT NULL UNIQUE,
+            user_id ' . $userFkType . ' NOT NULL UNIQUE,
             permission_level ENUM("Super Admin", "Admin", "Moderator") DEFAULT "Admin",
             department VARCHAR(100),
             can_manage_users BOOLEAN DEFAULT FALSE,
@@ -238,7 +236,7 @@ function ensure_schema(PDO $pdo): void
             can_view_reports BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            CONSTRAINT fk_admin_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_admin_user FOREIGN KEY (user_id) REFERENCES users(' . $userPk . ') ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
     );
 
@@ -261,7 +259,7 @@ function ensure_schema(PDO $pdo): void
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS diet_goals (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT UNSIGNED NOT NULL,
+            user_id ' . $userFkType . ' NOT NULL,
             goal_type ENUM("Weight Loss", "Weight Gain", "Maintenance") NOT NULL,
             target_weight DECIMAL(5,2),
             current_weight DECIMAL(5,2),
@@ -270,14 +268,14 @@ function ensure_schema(PDO $pdo): void
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            CONSTRAINT fk_goal_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_goal_user FOREIGN KEY (user_id) REFERENCES users(' . $userPk . ') ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
     );
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS daily_calorie_summary (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT UNSIGNED NOT NULL,
+            user_id ' . $userFkType . ' NOT NULL,
             summary_date DATE NOT NULL,
             total_calories INT DEFAULT 0,
             total_protein DECIMAL(7,2) DEFAULT 0,
@@ -290,14 +288,14 @@ function ensure_schema(PDO $pdo): void
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY unique_user_date (user_id, summary_date),
-            CONSTRAINT fk_summary_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_summary_user FOREIGN KEY (user_id) REFERENCES users(' . $userPk . ') ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
     );
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS calorie_warnings (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            user_id INT UNSIGNED NOT NULL,
+            user_id ' . $userFkType . ' NOT NULL,
             warning_date DATE NOT NULL,
             daily_goal INT,
             calories_consumed INT,
@@ -305,7 +303,28 @@ function ensure_schema(PDO $pdo): void
             warning_level ENUM("Caution", "Warning", "Critical") DEFAULT "Caution",
             user_notified BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_warning_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_warning_user FOREIGN KEY (user_id) REFERENCES users(' . $userPk . ') ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS meal_plans (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id ' . $userFkType . ' NOT NULL,
+            dietitian_id ' . $userFkType . ' NULL,
+            title VARCHAR(150) NOT NULL,
+            plan_type VARCHAR(100) NULL,
+            calories INT NULL,
+            duration_days INT NULL,
+            meals_json LONGTEXT NULL,
+            notes TEXT NULL,
+            assigned_by_role VARCHAR(20) NOT NULL DEFAULT "admin",
+            assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_user_id (user_id),
+            KEY idx_dietitian_id (dietitian_id),
+            CONSTRAINT fk_meal_plans_user FOREIGN KEY (user_id) REFERENCES users(' . $userPk . ') ON DELETE CASCADE,
+            CONSTRAINT fk_meal_plans_dietitian FOREIGN KEY (dietitian_id) REFERENCES users(' . $userPk . ') ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
     );
 
@@ -325,11 +344,92 @@ function ensure_schema(PDO $pdo): void
             CONSTRAINT fk_mpi_food FOREIGN KEY (food_id) REFERENCES food_items(id) ON DELETE RESTRICT
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
     );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS app_settings (
+            id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+            site_name VARCHAR(150) NOT NULL DEFAULT "Personalized Diet Recommendation System",
+            default_calorie_limit INT NOT NULL DEFAULT 2000,
+            allow_self_registration TINYINT(1) NOT NULL DEFAULT 1,
+            default_role VARCHAR(20) NOT NULL DEFAULT "user",
+            email_alerts TINYINT(1) NOT NULL DEFAULT 1,
+            new_registration_alerts TINYINT(1) NOT NULL DEFAULT 1,
+            alert_threshold INT NOT NULL DEFAULT 20,
+            admin_name VARCHAR(150) NOT NULL DEFAULT "Admin User",
+            admin_email VARCHAR(150) NOT NULL DEFAULT "admin@diet.com",
+            admin_avatar VARCHAR(255) NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+
+    $stmt = $pdo->query('SELECT COUNT(*) FROM app_settings WHERE id = 1');
+    if ((int) $stmt->fetchColumn() === 0) {
+        $pdo->prepare(
+            'INSERT INTO app_settings (
+                id, site_name, default_calorie_limit, allow_self_registration,
+                default_role, email_alerts, new_registration_alerts,
+                alert_threshold, admin_name, admin_email
+            ) VALUES (
+                1, "Personalized Diet Recommendation System", 2000, 1,
+                "user", 1, 1,
+                20, "Admin User", "' . DEFAULT_ADMIN_EMAIL . '"
+            )'
+        )->execute();
+    }
+
+    ensure_default_admin_user($pdo);
+}
+
+function ensure_users_table(PDO $pdo): void
+{
+    try {
+        read_users_columns($pdo);
+        return;
+    } catch (PDOException $exception) {
+        if (!is_broken_users_table_exception($exception)) {
+            throw $exception;
+        }
+    }
+
+    try {
+        $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+        $pdo->exec('DROP TABLE IF EXISTS users');
+    } finally {
+        $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+    }
+
+    create_users_table($pdo);
+}
+
+function create_users_table(PDO $pdo): void
+{
+    $pdo->exec(
+        'CREATE TABLE users (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NULL,
+            first_name VARCHAR(50) NULL,
+            last_name VARCHAR(50) NULL,
+            email VARCHAR(150) NOT NULL UNIQUE,
+            phone VARCHAR(20) NULL,
+            gender VARCHAR(20) NULL,
+            date_of_birth DATE NULL,
+            password VARCHAR(255) NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            role VARCHAR(20) NOT NULL DEFAULT "user",
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            last_login_at TIMESTAMP NULL DEFAULT NULL,
+            KEY idx_email (email),
+            KEY idx_role (role)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
 }
 
 function migrate_legacy_users_table(PDO $pdo): void
 {
     $columns = get_users_columns($pdo);
+    $userPk = user_primary_key_column($pdo);
 
     if (!in_array('password_hash', $columns, true)) {
         $pdo->exec('ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER email');
@@ -338,11 +438,11 @@ function migrate_legacy_users_table(PDO $pdo): void
 
     if (in_array('password', $columns, true)) {
         $legacyUsers = $pdo->query(
-            'SELECT id, password, password_hash FROM users'
+            "SELECT {$userPk} AS id, password, password_hash FROM users"
         )->fetchAll();
 
         $update = $pdo->prepare(
-            'UPDATE users SET password_hash = :password_hash WHERE id = :id'
+            "UPDATE users SET password_hash = :password_hash WHERE {$userPk} = :id"
         );
 
         foreach ($legacyUsers as $user) {
@@ -372,12 +472,6 @@ function migrate_legacy_users_table(PDO $pdo): void
 
 function get_users_columns(PDO $pdo): array
 {
-    static $columns = null;
-
-    if (is_array($columns)) {
-        return $columns;
-    }
-
     $columns = [];
     $stmt = $pdo->query('SHOW COLUMNS FROM users');
 
@@ -388,9 +482,36 @@ function get_users_columns(PDO $pdo): array
     return $columns;
 }
 
+function read_users_columns(PDO $pdo): array
+{
+    return get_users_columns($pdo);
+}
+
+function is_broken_users_table_exception(PDOException $exception): bool
+{
+    $errorInfo = $exception->errorInfo ?? [];
+    $driverCode = (int) ($errorInfo[1] ?? 0);
+    $sqlState = strtoupper((string) ($errorInfo[0] ?? ''));
+    $message = strtolower($exception->getMessage());
+
+    return in_array($driverCode, [1146, 1932], true)
+        || $sqlState === '42S02'
+        || str_contains($message, "doesn't exist in engine")
+        || str_contains($message, 'unknown table')
+        || str_contains($message, 'show columns');
+}
+
 function users_has_column(PDO $pdo, string $column): bool
 {
     return in_array($column, get_users_columns($pdo), true);
+}
+
+function table_exists(PDO $pdo, string $table): bool
+{
+    $stmt = $pdo->prepare('SHOW TABLES LIKE :table_name');
+    $stmt->execute(['table_name' => $table]);
+
+    return (bool) $stmt->fetchColumn();
 }
 
 function user_primary_key_column(PDO $pdo): string
@@ -445,5 +566,68 @@ function ensure_users_login_tracking_columns(PDO $pdo): void
 
     if (!in_array('last_login_at', $columns, true)) {
         $pdo->exec('ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP NULL DEFAULT NULL AFTER created_at');
+    }
+}
+
+function ensure_default_admin_user(PDO $pdo): void
+{
+    $stmt = $pdo->query('SELECT admin_name, admin_email FROM app_settings WHERE id = 1 LIMIT 1');
+    $settings = $stmt->fetch() ?: [];
+    $adminEmail = strtolower((string) ($settings['admin_email'] ?? DEFAULT_ADMIN_EMAIL));
+    $adminName = trim((string) ($settings['admin_name'] ?? 'Admin User')) ?: 'Admin User';
+    $adminHash = password_hash(DEFAULT_ADMIN_PASSWORD, PASSWORD_DEFAULT);
+
+    $userPk = user_primary_key_column($pdo);
+    $check = $pdo->prepare("SELECT {$userPk} AS id, name, email, password_hash, role FROM users WHERE LOWER(email) = :email LIMIT 1");
+    $check->execute(['email' => $adminEmail]);
+
+    $adminUser = $check->fetch();
+    if (!$adminUser) {
+        $insert = $pdo->prepare(
+            'INSERT INTO users (name, email, password_hash, role)
+             VALUES (:name, :email, :password_hash, :role)'
+        );
+        $insert->execute([
+            'name' => $adminName,
+            'email' => $adminEmail,
+            'password_hash' => $adminHash,
+            'role' => 'admin',
+        ]);
+
+        $adminUser = ['id' => (int) $pdo->lastInsertId()];
+    } else {
+        $needsUpdate = normalize_user_role((string) ($adminUser['role'] ?? '')) !== 'admin'
+            || !password_verify(DEFAULT_ADMIN_PASSWORD, (string) ($adminUser['password_hash'] ?? ''));
+
+        if ($needsUpdate) {
+            $update = $pdo->prepare(
+                'UPDATE users
+                 SET name = :name,
+                     email = :email,
+                     password_hash = :password_hash,
+                     role = :role
+                 WHERE ' . $userPk . ' = :id'
+            );
+            $update->execute([
+                'id' => (int) $adminUser['id'],
+                'name' => $adminName,
+                'email' => $adminEmail,
+                'password_hash' => $adminHash,
+                'role' => 'admin',
+            ]);
+        }
+    }
+
+    if (table_exists($pdo, 'admins')) {
+        $adminCheck = $pdo->prepare('SELECT id FROM admins WHERE user_id = :user_id LIMIT 1');
+        $adminCheck->execute(['user_id' => (int) $adminUser['id']]);
+
+        if (!$adminCheck->fetchColumn()) {
+            $adminInsert = $pdo->prepare(
+                'INSERT INTO admins (user_id, permission_level, department, can_manage_users, can_manage_dietitians, can_manage_food_database, can_view_reports)
+                 VALUES (:user_id, "Super Admin", "Administration", 1, 1, 1, 1)'
+            );
+            $adminInsert->execute(['user_id' => (int) $adminUser['id']]);
+        }
     }
 }

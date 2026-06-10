@@ -63,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'success' => true,
             'message' => 'Feedback updated successfully.',
         ]);
+        return;
     }
 
     $stmt = $pdo->prepare(
