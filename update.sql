@@ -1,6 +1,3 @@
--- =====================================================
--- SIMPLIFIED DIET SYSTEM DATABASE SCHEMA
--- =====================================================
 
 CREATE DATABASE IF NOT EXISTS diet_system
   CHARACTER SET utf8mb4
@@ -20,9 +17,7 @@ DROP TABLE IF EXISTS users;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- =====================================================
--- 1. USERS TABLE (Everyone who uses the system)
--- =====================================================
+
 CREATE TABLE users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -42,18 +37,15 @@ CREATE TABLE users (
     INDEX idx_role (role)
 );
 
--- =====================================================
--- 2. HEALTH PROFILES (User's health information)
--- =====================================================
 CREATE TABLE health_profiles (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL UNIQUE,
     
-    -- Body measurements
+    
     weight DECIMAL(5,2),  -- in kg
     height DECIMAL(5,2),  -- in cm
     
-    -- Lifestyle
+    
     activity_level ENUM('Sedentary', 'Light', 'Moderate', 'Active', 'Very Active'),
     
     -- Goals
@@ -71,9 +63,7 @@ CREATE TABLE health_profiles (
     INDEX idx_user (user_id)
 );
 
--- =====================================================
--- 3. FOOD ITEMS (Database of foods)
--- =====================================================
+
 CREATE TABLE food_items (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(150) NOT NULL UNIQUE,
@@ -90,9 +80,7 @@ CREATE TABLE food_items (
     INDEX idx_category (category)
 );
 
--- =====================================================
--- 4. FOOD LOGS (What users eat each day)
--- =====================================================
+
 CREATE TABLE food_logs (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,
@@ -117,9 +105,7 @@ CREATE TABLE food_logs (
     INDEX idx_date (log_date)
 );
 
--- =====================================================
--- 5. DAILY SUMMARIES (Auto-calculated totals per day)
--- =====================================================
+
 CREATE TABLE daily_summaries (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,
@@ -142,9 +128,7 @@ CREATE TABLE daily_summaries (
     INDEX idx_date (summary_date)
 );
 
--- =====================================================
--- 6. MEAL PLANS (Dietitian-created plans)
--- =====================================================
+
 CREATE TABLE meal_plans (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,      -- Who gets this plan
